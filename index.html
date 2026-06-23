@@ -782,6 +782,10 @@ function renderResults(results) {
         </div>
         ${gauge}
         <div class="result-ranges">${rangesHtml}</div>
+        ${status === "red" ? `
+        <div style="margin:12px 0 10px;padding:10px 12px;background:#fff5f5;border:1.5px solid #fed7d7;border-radius:8px;font-size:.8rem;color:#822727;line-height:1.5;">
+          ⚠️ <strong>Flag for ads team review.</strong> Escalate for a deeper evaluation — review targeting, bidding strategy, negatives, conversion tracking, and account-level context before drawing conclusions.
+        </div>` : ""}
         <span class="reliability-badge ${reliabilityClass(bench.r)}">
           Sample: ${bench.r}
         </span>
