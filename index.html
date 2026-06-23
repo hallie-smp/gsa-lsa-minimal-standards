@@ -251,6 +251,18 @@
     padding: 8px 0;
   }
 
+  .data-note {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: .83rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .data-note strong { color: var(--text); }
+
   /* Gauge bar */
   .gauge-wrap { margin-bottom: 12px; }
   .gauge-bar {
@@ -318,6 +330,9 @@
     <button class="tab-btn active" data-platform="GSA" onclick="setPlatform('GSA')">GSA — Google Search Ads</button>
     <button class="tab-btn" data-platform="LSA" onclick="setPlatform('LSA')">LSA — Local Services Ads</button>
   </div>
+
+  <!-- Data source note -->
+  <div id="dataNote" class="data-note"></div>
 
   <!-- Selectors -->
   <div class="card">
@@ -453,6 +468,17 @@ const BENCHMARKS = [
   {p:"GSA",s:"Specialty",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.6, high:3.0, r:"Weak / Directional Only"},
   {p:"GSA",s:"Specialty",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:0.7, high:1.2, r:"Use With Caution"},
 
+  // GSA — Off-Road — No Data entries
+  {p:"GSA",s:"Off-Road",m:"CPL",a:"Metro",    noData:true},
+  {p:"GSA",s:"Off-Road",m:"CPL",a:"Suburban", noData:true},
+  {p:"GSA",s:"Off-Road",m:"CPC",a:"Metro",    noData:true},
+  {p:"GSA",s:"Off-Road",m:"CTR",a:"Metro",    noData:true},
+  {p:"GSA",s:"Off-Road",m:"CR", a:"Metro",    noData:true},
+  {p:"GSA",s:"Off-Road",m:"CR", a:"Suburban", noData:true},
+  // GSA — Specialty — No Data entries
+  {p:"GSA",s:"Specialty",m:"CPL",a:"Suburban", noData:true},
+  {p:"GSA",s:"Specialty",m:"CR", a:"Suburban", noData:true},
+
   // LSA — General — CPL
   {p:"LSA",s:"General",m:"CPL",a:"Metro",    d:"lower_better", pct:false, low:17.4, high:24.0, r:"More Reliable"},
   {p:"LSA",s:"General",m:"CPL",a:"Suburban", d:"lower_better", pct:false, low:16.3, high:23.0, r:"Use With Caution"},
@@ -467,6 +493,11 @@ const BENCHMARKS = [
 let state = { platform: "GSA", shopType: "", serviceArea: "" };
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
+const PLATFORM_NOTES = {
+  GSA: "<strong>Data source:</strong> GSA benchmarks are based on <strong>12 months</strong> of real client performance data, segmented by shop type and service area. These are operational guidelines, not hard-set rules — always consider account-level context such as budget, competition, population density, and seasonality.",
+  LSA: "<strong>Data source:</strong> LSA benchmarks are based on <strong>6 months</strong> of real client performance data. LSA is tracked for General shop type only. Use with awareness that sample sizes are smaller than GSA due to the shorter history and data access limitations when clients off-board.",
+};
+
 function getShopTypes(platform) {
   return [...new Set(BENCHMARKS.filter(b => b.p === platform).map(b => b.s))];
 }
@@ -575,6 +606,7 @@ function setPlatform(platform) {
   document.querySelectorAll(".tab-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.platform === platform);
   });
+  document.getElementById("dataNote").innerHTML = PLATFORM_NOTES[platform];
   renderShopTypes();
   renderServiceAreas();
   hideMetrics();
@@ -636,23 +668,32 @@ function renderMetricInputs() {
   benchmarks.forEach(bench => {
     const div = document.createElement("div");
     div.className = "field";
-    const unit = bench.pct ? "%" : "$";
-    const placeholder = bench.pct ? "e.g. 2.5" : "e.g. 150";
-    div.innerHTML = `
-      <label>${bench.m}</label>
-      <div class="metric-input-wrap">
-        <input type="number" min="0" step="any"
-          id="input-${bench.m.replace(/\s+/g,'-')}"
-          placeholder="${placeholder}"
-          oninput="onInputChange()"
-        />
-        <span class="unit">${unit}</span>
-      </div>`;
+    if (bench.noData) {
+      div.innerHTML = `
+        <label>${bench.m}</label>
+        <div style="padding:10px 14px;border:1.5px dashed var(--border);border-radius:8px;font-size:.83rem;color:var(--muted);font-style:italic;background:#f8f9fa;">
+          Not enough data to provide an output
+        </div>`;
+    } else {
+      const unit = bench.pct ? "%" : "$";
+      const placeholder = bench.pct ? "e.g. 2.5" : "e.g. 150";
+      div.innerHTML = `
+        <label>${bench.m}</label>
+        <div class="metric-input-wrap">
+          <input type="number" min="0" step="any"
+            id="input-${bench.m.replace(/\s+/g,'-')}"
+            placeholder="${placeholder}"
+            oninput="onInputChange()"
+          />
+          <span class="unit">${unit}</span>
+        </div>`;
+    }
     grid.appendChild(div);
   });
 
   card.classList.remove("hidden");
-  renderResults([]);
+  // Pass noData entries immediately so their cards show before values are entered
+  renderResults(benchmarks.map(b => ({ bench: b, value: null })));
 }
 
 function onInputChange() {
@@ -669,7 +710,8 @@ function onInputChange() {
 function renderResults(results) {
   const section = document.getElementById("resultsSection");
 
-  if (!results.length || results.every(r => r.value === null)) {
+  const hasAnyNoData = results.some(r => r.bench.noData);
+  if (!results.length || (results.every(r => r.value === null) && !hasAnyNoData)) {
     if (!state.shopType || !state.serviceArea) {
       section.innerHTML = `<div class="prompt-msg">Select a shop type and service area above to see benchmarks.</div>`;
     } else {
@@ -678,14 +720,25 @@ function renderResults(results) {
     return;
   }
 
-  // Only show results that have values entered
-  const active = results.filter(r => r.value !== null);
+  // Only show results that have values entered OR are noData
+  const active = results.filter(r => r.bench.noData || r.value !== null);
   if (!active.length) {
     section.innerHTML = `<div class="prompt-msg">Enter metric values above to see performance classifications.</div>`;
     return;
   }
 
   const cards = active.map(({ bench, value }) => {
+    if (bench.noData) {
+      return `
+        <div class="result-card empty">
+          <div class="result-metric-name">${bench.m}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div class="stoplight-dot dot-gray"></div>
+            <div class="stoplight-label label-gray">No Data Available</div>
+          </div>
+          <p style="font-size:.82rem;color:var(--muted);font-style:italic;">Not enough data to provide a benchmark output for this shop type and service area combination.</p>
+        </div>`;
+    }
     const status = classify(value, bench);
     const hasYellow = bench.low < bench.high;
 
@@ -739,6 +792,7 @@ function renderResults(results) {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
+document.getElementById("dataNote").innerHTML = PLATFORM_NOTES["GSA"];
 renderShopTypes();
 </script>
 </body>
