@@ -460,11 +460,11 @@ const PLATFORM_METRICS = {
 
 // Column name synonyms for auto-detection
 const COL_ALIASES = {
-  clientName: ["client name","client","account name","account","name","campaign name"],
-  CPL:  ["cpl","cost per lead","cost per qualified lead","cost/conv","cost / conv","cost per conversion"],
-  CPC:  ["cpc","cost per click","avg. cpc","avg cpc"],
-  CTR:  ["ctr","click-through rate","click through rate","clickthrough rate"],
-  CR:   ["cr","conversion rate","conv. rate","conv rate","conversions rate"],
+  clientName:   ["client name","client","account name","account","name","campaign name"],
+  CPL:          ["cpl","cost per lead","cost per qualified lead","cost/conv","cost / conv","cost per conversion"],
+  CPC:          ["cpc","cost per click","avg. cpc","avg cpc"],
+  CTR:          ["ctr","click-through rate","click through rate","clickthrough rate"],
+  CR:           ["cr","conversion rate","conv. rate","conv rate","conversions rate"],
   "Lead Quality Rate": ["lead quality rate","lead quality","quality rate","lqr"],
 };
 
@@ -527,11 +527,13 @@ function showToast(msg, type = "") {
   t._timer = setTimeout(() => { t.className = "toast"; }, 3500);
 }
 
-// Parse a raw cell value to a number, stripping $, %, commas
+// Parse a raw cell value to a number, stripping $, %, commas; "--" → null
 function parseMetricValue(raw, isPercent) {
   if (raw === null || raw === undefined || raw === "") return null;
-  const str = String(raw).replace(/[$,%\s]/g, "").replace(/,/g, "");
-  let n = parseFloat(str);
+  const str = String(raw).trim();
+  if (str === "--" || str === "-" || str.toLowerCase() === "n/a") return null;
+  const cleaned = str.replace(/[$,%\s]/g, "").replace(/,/g, "");
+  let n = parseFloat(cleaned);
   if (isNaN(n)) return null;
   // If it's a percent metric and value looks like a decimal (e.g. 0.025 → 2.5%)
   if (isPercent && n < 1 && n > 0) n = n * 100;
@@ -762,8 +764,30 @@ function processFile(file) {
     try {
       const wb = XLSX.read(e.target.result, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const raw = XLSX.utils.sheet_to_json(ws, { defval: "" });
-      if (!raw.length) { showToast("File appears to be empty", "error"); return; }
+      // Get raw rows as arrays so we can find the real header row ourselves
+      const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      // Google Ads exports prepend metadata rows (e.g. "Performance report", date range).
+      // Find the first row that contains a recognizable column name.
+      const knownCols = ["account name","client name","name","account","ctr","cpc","cost","clicks","conversions","conv. rate"];
+      const norm = s => String(s).toLowerCase().trim();
+      const headerIdx = allRows.findIndex(row =>
+        row.some(cell => knownCols.includes(norm(cell)))
+      );
+      if (headerIdx === -1) { showToast("Could not detect column headers in this file.", "error"); return; }
+      const headers = allRows[headerIdx].map(String);
+      // Build array of objects using detected headers, skipping metadata and total rows
+      const raw = allRows.slice(headerIdx + 1)
+        .filter(row => {
+          const first = norm(row[0] || "");
+          // Skip blank rows and Google Ads "Total:" summary rows
+          return first && !first.startsWith("total:");
+        })
+        .map(row => {
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = row[i] ?? ""; });
+          return obj;
+        });
+      if (!raw.length) { showToast("No data rows found in this file.", "error"); return; }
       parseBulkData(raw);
     } catch(err) {
       showToast("Could not read file: " + err.message, "error");
