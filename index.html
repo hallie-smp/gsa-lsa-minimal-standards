@@ -171,6 +171,42 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .info-card strong { display: block; font-size: .9rem; color: var(--text); margin-bottom: 4px; }
 .divider { height: 1px; background: var(--border); margin: 20px 0; }
 .tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+
+/* History report */
+.report-header { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 24px 28px; margin-bottom: 20px; box-shadow: var(--shadow); }
+.report-header h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+.report-header p  { font-size: .85rem; opacity: .8; }
+.snapshot-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.snapshot-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 16px; }
+.snapshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.snapshot-metric { border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.snapshot-metric.snap-red    { border-color: var(--red-border);    background: var(--red-bg); }
+.snapshot-metric.snap-yellow { border-color: var(--yellow-border); background: var(--yellow-bg); }
+.snapshot-metric.snap-green  { border-color: var(--green-border);  background: var(--green-bg); }
+.snap-metric-name { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+.snap-flow { display: flex; align-items: center; gap: 4px; font-size: .82rem; margin-bottom: 6px; flex-wrap: wrap; }
+.snap-arrow { color: var(--muted); }
+.snap-delta { font-size: .8rem; font-weight: 700; margin-top: 4px; }
+.delta-up   { color: var(--green); }
+.delta-down { color: var(--red); }
+.delta-flat { color: var(--muted); }
+.snap-verdict { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-top: 6px; }
+.verdict-improving { color: var(--green); }
+.verdict-declining { color: var(--red); }
+.verdict-stable    { color: var(--muted); }
+.metric-report-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.metric-report-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.metric-report-left { flex: 0 0 auto; }
+.metric-report-name { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.metric-report-value { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+.metric-report-value.val-red    { color: var(--red); }
+.metric-report-value.val-yellow { color: var(--yellow); }
+.metric-report-value.val-green  { color: var(--green); }
+.metric-report-value.val-gray   { color: var(--muted); }
+.metric-mom { font-size: .85rem; font-weight: 600; margin-top: 4px; }
+.metric-report-chart { flex: 1; min-width: 200px; }
+.chart-month-labels { display: flex; justify-content: space-between; padding: 0 2px; margin-top: 4px; }
+.chart-month-labels span { font-size: .68rem; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -1121,49 +1157,252 @@ async function loadHistory() {
   renderHistory(data, client);
 }
 
+// ── SVG line chart for a single metric ──────────────────────────────────────
+function drawMetricChart(entries, bench) {
+  if (entries.length < 2) return `<div style="font-size:.8rem;color:var(--muted);font-style:italic;padding:20px 0">Not enough data to draw chart.</div>`;
+  const W = 460, H = 120;
+  const pad = { top: 14, right: 16, bottom: 30, left: 10 };
+  const cw = W - pad.left - pad.right, ch = H - pad.top - pad.bottom;
+
+  const values = entries.map(e => parseFloat(e.value));
+  const allV   = [...values, bench.low, bench.high];
+  const rawMin = Math.min(...allV), rawMax = Math.max(...allV);
+  const spread = rawMax - rawMin || rawMax * 0.2 || 1;
+  const yMin   = rawMin - spread * 0.15;
+  const yMax   = rawMax + spread * 0.15;
+
+  const xS = i  => pad.left + (entries.length === 1 ? cw/2 : (i / (entries.length - 1)) * cw);
+  const yS = v  => pad.top  + ch - ((v - yMin) / (yMax - yMin)) * ch;
+  const clamp = v => Math.max(pad.top, Math.min(pad.top + ch, yS(v)));
+
+  // Colored background zones
+  const yBot = pad.top + ch, yTop = pad.top;
+  let zones = "";
+  if (bench.d === "lower_better") {
+    const yThreshHigh = clamp(bench.high);
+    const yThreshLow  = clamp(bench.low);
+    zones = `
+      <rect x="${pad.left}" y="${yThreshLow}" width="${cw}" height="${yBot - yThreshLow}" fill="#48bb78" opacity=".12"/>
+      ${bench.low < bench.high ? `<rect x="${pad.left}" y="${yThreshHigh}" width="${cw}" height="${yThreshLow - yThreshHigh}" fill="#ecc94b" opacity=".15"/>` : ""}
+      <rect x="${pad.left}" y="${yTop}" width="${cw}" height="${yThreshHigh - yTop}" fill="#e53e3e" opacity=".1"/>`;
+  } else {
+    const yThreshLow  = clamp(bench.low);
+    const yThreshHigh = clamp(bench.high);
+    zones = `
+      <rect x="${pad.left}" y="${yTop}" width="${cw}" height="${yThreshHigh - yTop}" fill="#48bb78" opacity=".12"/>
+      ${bench.low < bench.high ? `<rect x="${pad.left}" y="${yThreshHigh}" width="${cw}" height="${yThreshLow - yThreshHigh}" fill="#ecc94b" opacity=".15"/>` : ""}
+      <rect x="${pad.left}" y="${yThreshLow}" width="${cw}" height="${yBot - yThreshLow}" fill="#e53e3e" opacity=".1"/>`;
+  }
+
+  // Threshold dashed line (at-risk boundary)
+  const threshY = bench.d === "lower_better" ? clamp(bench.high) : clamp(bench.low);
+  const threshLine = `<line x1="${pad.left}" y1="${threshY}" x2="${pad.left+cw}" y2="${threshY}" stroke="#e53e3e" stroke-width="1.5" stroke-dasharray="5,4" opacity=".5"/>`;
+
+  // Line path
+  const pts = entries.map((e,i) => `${xS(i).toFixed(1)},${yS(parseFloat(e.value)).toFixed(1)}`);
+  const linePath = `<path d="M ${pts.join(" L ")}" fill="none" stroke="#3b5bdb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+  // Area fill under line
+  const areaPath = `<path d="M ${pts[0]} L ${pts.join(" L ")} L ${xS(entries.length-1).toFixed(1)},${yBot} L ${xS(0).toFixed(1)},${yBot} Z" fill="url(#lineGrad)" opacity=".2"/>`;
+
+  // Dots colored by status
+  const dots = entries.map((e,i) => {
+    const status = e.status || classify(parseFloat(e.value), bench);
+    const color = {red:"#e53e3e", yellow:"#ecc94b", green:"#48bb78"}[status] || "#a0aec0";
+    return `<circle cx="${xS(i).toFixed(1)}" cy="${yS(parseFloat(e.value)).toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2" filter="url(#dotShadow)"/>`;
+  }).join("");
+
+  // Value labels on dots (only if ≤ 6 months to avoid crowding)
+  let valueLabels = "";
+  if (entries.length <= 6) {
+    valueLabels = entries.map((e,i) => {
+      const isPct = bench.pct;
+      const v = parseFloat(e.value);
+      const label = isPct ? v.toFixed(1)+"%" : "$"+v.toFixed(0);
+      const cy = yS(v);
+      const labelY = cy < pad.top + 20 ? cy + 16 : cy - 9;
+      return `<text x="${xS(i).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#2d3748">${label}</text>`;
+    }).join("");
+  }
+
+  // X-axis month labels
+  const xLabels = entries.map((e,i) => {
+    const [y, mo] = e.report_month.split("-");
+    const label = new Date(+y, +mo-1).toLocaleDateString("en-US", { month:"short", year:"2-digit" });
+    return `<text x="${xS(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9.5" fill="#718096">${label}</text>`;
+  }).join("");
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+    <defs>
+      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3b5bdb"/>
+        <stop offset="100%" stop-color="#3b5bdb" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="dotShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity=".25"/>
+      </filter>
+    </defs>
+    ${zones}
+    ${areaPath}
+    ${threshLine}
+    ${linePath}
+    ${valueLabels}
+    ${dots}
+    ${xLabels}
+  </svg>`;
+}
+
+// ── 3-month snapshot summary ──────────────────────────────────────────────────
+function renderSnapshot(metricMap, platform, shopType, area) {
+  const allMetrics = Object.keys(metricMap);
+  if (!allMetrics.length) return "";
+
+  // Collect up to last 3 entries per metric
+  const windows = {};
+  allMetrics.forEach(m => {
+    const all = metricMap[m];
+    windows[m] = all.slice(-3);
+  });
+
+  // Determine date range label
+  const allMonths = Object.values(windows).flat().map(e => e.report_month).sort();
+  const earliest  = fmtMonth(allMonths[0]);
+  const latest    = fmtMonth(allMonths[allMonths.length-1]);
+  const rangeLabel = earliest === latest ? earliest : `${earliest} → ${latest}`;
+
+  let cards = "";
+  allMetrics.forEach(m => {
+    const entries = windows[m];
+    const bench   = getBench(platform, shopType, area, m);
+    if (!bench || bench.noData || !entries.length) return;
+
+    const isPct = bench.pct;
+    const fmt_v = v => isPct ? parseFloat(v).toFixed(1)+"%" : "$"+parseFloat(v).toFixed(0);
+    const statusEmoji = {red:"🔴", yellow:"🟡", green:"🟢"};
+    const rank = {green:2, yellow:1, red:0};
+
+    // Status flow (last 3)
+    const flowHtml = entries.map((e,i) => {
+      const s = e.status || classify(parseFloat(e.value), bench);
+      return (i > 0 ? `<span class="snap-arrow">→</span>` : "") + statusEmoji[s];
+    }).join("");
+
+    // Net delta over window
+    const first = parseFloat(entries[0].value);
+    const last  = parseFloat(entries[entries.length-1].value);
+    const delta = last - first;
+    const deltaFmt = (delta >= 0 ? "+" : "") + (isPct ? delta.toFixed(1)+"%" : "$"+Math.abs(delta).toFixed(0));
+    const deltaSign = delta === 0 ? "flat" : (delta > 0 ? "up" : "down");
+
+    // Verdict: improving = moving toward green
+    const firstStatus = rank[entries[0].status || classify(first, bench)];
+    const lastStatus  = rank[entries[entries.length-1].status || classify(last, bench)];
+    let verdict = "stable", verdictClass = "verdict-stable";
+    if (lastStatus > firstStatus) { verdict = "↑ Improving"; verdictClass = "verdict-improving"; }
+    else if (lastStatus < firstStatus) { verdict = "↓ Declining"; verdictClass = "verdict-declining"; }
+
+    const curStatus = entries[entries.length-1].status || classify(last, bench);
+    cards += `<div class="snapshot-metric snap-${curStatus}">
+      <div class="snap-metric-name">${m}</div>
+      <div class="snap-flow">${flowHtml}</div>
+      <div class="snap-delta ${deltaSign === "up" ? "delta-up" : deltaSign === "down" ? "delta-down" : "delta-flat"}">${deltaFmt} over period</div>
+      <div class="snap-verdict ${verdictClass}">${verdict}</div>
+    </div>`;
+  });
+
+  return `<div class="snapshot-card">
+    <div class="snapshot-title">3-Month Snapshot &nbsp;·&nbsp; ${rangeLabel}</div>
+    <div class="snapshot-grid">${cards}</div>
+  </div>`;
+}
+
+// ── Main history renderer ────────────────────────────────────────────────────
 function renderHistory(rows, clientName) {
   const section = document.getElementById("historyResults");
+
+  // Group by platform/shop/area
   const groups = {};
   rows.forEach(r => {
-    const gKey = `${r.platform} · ${r.shop_type} · ${r.service_area}`;
+    const gKey = `${r.platform}||${r.shop_type}||${r.service_area}`;
     if (!groups[gKey]) groups[gKey] = {};
     if (!groups[gKey][r.metric]) groups[gKey][r.metric] = [];
     groups[gKey][r.metric].push(r);
   });
-  const trendIcon = entries => {
-    if (entries.length < 2) return '<span title="Not enough data">—</span>';
-    const rank = { green:2, yellow:1, red:0 };
-    const prev = entries[entries.length-2], curr = entries[entries.length-1];
-    if (curr.status === prev.status) return "➡️";
-    return rank[curr.status] > rank[prev.status] ? "📈" : "📉";
-  };
-  const pillHtml = s => {
-    const labels={red:"At Risk",yellow:"Healthy",green:"High Performing"}, cls={red:"pill-red",yellow:"pill-yellow",green:"pill-green"}, emoji={red:"🔴",yellow:"🟡",green:"🟢"};
-    return `<span class="status-pill ${cls[s]}">${emoji[s]} ${labels[s]}</span>`;
-  };
 
-  let html = `<div style="font-size:1.1rem;font-weight:700;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);">📋 ${clientName}</div>`;
-  for (const [groupKey, metrics] of Object.entries(groups)) {
-    html += `<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">${groupKey}</div>`;
-    for (const [metric, entries] of Object.entries(metrics)) {
-      html += `<div class="card" style="padding:20px;margin-bottom:16px">
-        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;display:flex;gap:8px;align-items:center">${metric} <span style="font-size:1rem">${trendIcon(entries)}</span></div>
-        <div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Value</th><th>Change</th><th>Status</th><th>Reliability</th></tr></thead><tbody>`;
-      entries.forEach((e, i) => {
-        const prev = i > 0 ? entries[i-1] : null;
-        let changeHtml = "<span style='color:var(--muted)'>—</span>";
-        if (prev) {
-          const delta = e.value - prev.value;
-          const isPct = e.metric === "CTR" || e.metric === "CR" || e.metric === "Lead Quality Rate";
-          const sign = delta > 0 ? "+" : "";
-          const col  = delta > 0 ? "var(--green)" : "var(--red)";
-          changeHtml = `<span style="color:${col};font-weight:600">${sign}${isPct ? delta.toFixed(1)+"%" : "$"+Math.abs(delta).toFixed(2)}</span>`;
-        }
-        const valFmt = (e.metric==="CTR"||e.metric==="CR"||e.metric==="Lead Quality Rate")
-          ? parseFloat(e.value).toFixed(1)+"%" : "$"+parseFloat(e.value).toFixed(2);
-        html += `<tr><td>${fmtMonth(e.report_month)}</td><td><strong>${valFmt}</strong></td><td>${changeHtml}</td><td>${pillHtml(e.status)}</td><td><span class="reliability-badge ${reliabilityClass(e.reliability)}" style="font-size:.72rem">${e.reliability}</span></td></tr>`;
-      });
-      html += `</tbody></table></div></div>`;
+  let html = "";
+  for (const [gKey, metricMap] of Object.entries(groups)) {
+    const [platform, shopType, area] = gKey.split("||");
+
+    // Report header
+    const latestMonth = Object.values(metricMap).flat().map(e=>e.report_month).sort().pop();
+    html += `<div class="report-header">
+      <h2>📋 ${clientName}</h2>
+      <p>${platform} &nbsp;·&nbsp; ${shopType} &nbsp;·&nbsp; ${area} &nbsp;·&nbsp; Through ${fmtMonth(latestMonth)}</p>
+    </div>`;
+
+    // 3-month snapshot
+    html += renderSnapshot(metricMap, platform, shopType, area);
+
+    // Per-metric cards
+    for (const [metric, entries] of Object.entries(metricMap)) {
+      const bench = getBench(platform, shopType, area, metric);
+      if (!bench || bench.noData) continue;
+
+      const latest  = entries[entries.length - 1];
+      const prev    = entries.length > 1 ? entries[entries.length - 2] : null;
+      const curVal  = parseFloat(latest.value);
+      const curStatus = latest.status || classify(curVal, bench);
+      const isPct   = bench.pct;
+      const fmtV    = v => isPct ? parseFloat(v).toFixed(1)+"%" : "$"+parseFloat(v).toFixed(2);
+      const labelText = {red:"At Risk", yellow:"Healthy / Expected", green:"High Performing"}[curStatus];
+
+      // MoM delta
+      let momHtml = `<span style="color:var(--muted);font-size:.82rem">First entry</span>`;
+      if (prev) {
+        const delta = curVal - parseFloat(prev.value);
+        const sign  = delta >= 0 ? "+" : "";
+        const deltaStr = isPct ? delta.toFixed(1)+"%" : "$"+Math.abs(delta).toFixed(2);
+        // For lower_better: going down is good; for higher_better: going up is good
+        const isGood = bench.d === "lower_better" ? delta <= 0 : delta >= 0;
+        const col    = isGood ? "var(--green)" : "var(--red)";
+        const arrow  = delta > 0 ? "▲" : delta < 0 ? "▼" : "─";
+        momHtml = `<span style="color:${col};font-weight:700">${arrow} ${sign}${deltaStr}</span>
+          <span style="color:var(--muted);font-size:.78rem;margin-left:4px">vs ${fmtMonth(prev.report_month)}</span>`;
+      }
+
+      html += `<div class="metric-report-card">
+        <div class="metric-report-top">
+          <div class="metric-report-left">
+            <div class="metric-report-name">${metric}</div>
+            <div class="metric-report-value val-${curStatus}">${fmtV(curVal)}</div>
+            <div style="margin-bottom:8px"><span class="status-pill pill-${curStatus}">${{red:"🔴",yellow:"🟡",green:"🟢"}[curStatus]} ${labelText}</span></div>
+            <div class="metric-mom">${momHtml}</div>
+            <div style="margin-top:10px"><span class="reliability-badge ${reliabilityClass(bench.r)}" style="font-size:.72rem">Sample: ${bench.r}</span></div>
+          </div>
+          <div class="metric-report-chart">
+            ${drawMetricChart(entries, bench)}
+          </div>
+        </div>
+        ${entries.length > 1 ? `<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Monthly Breakdown</div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Value</th><th>Change</th><th>Status</th></tr></thead><tbody>
+          ${entries.map((e,i) => {
+            const p = i > 0 ? entries[i-1] : null;
+            const v = parseFloat(e.value);
+            const s = e.status || classify(v, bench);
+            let chg = `<span style="color:var(--muted)">—</span>`;
+            if (p) {
+              const d = v - parseFloat(p.value);
+              const good = bench.d === "lower_better" ? d <= 0 : d >= 0;
+              const col  = good ? "var(--green)" : "var(--red)";
+              const arr  = d > 0 ? "▲" : d < 0 ? "▼" : "─";
+              chg = `<span style="color:${col};font-weight:600">${arr} ${(d>=0?"+":"")}${isPct ? d.toFixed(1)+"%" : "$"+Math.abs(d).toFixed(2)}</span>`;
+            }
+            return `<tr><td>${fmtMonth(e.report_month)}</td><td><strong>${fmtV(v)}</strong></td><td>${chg}</td><td><span class="status-pill pill-${s}">${{red:"🔴",yellow:"🟡",green:"🟢"}[s]} ${{red:"At Risk",yellow:"Healthy",green:"High Performing"}[s]}</span></td></tr>`;
+          }).join("")}
+          </tbody></table></div>
+        </div>` : ""}
+      </div>`;
     }
   }
   section.innerHTML = html;
