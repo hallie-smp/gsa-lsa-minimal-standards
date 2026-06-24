@@ -48,11 +48,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 /* Fields */
 .field label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
-.field input, .field select {
+.field input:not([type="checkbox"]), .field select {
   width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
   font-size: 1rem; color: var(--text); background: #fff; appearance: none; outline: none; transition: border-color .15s;
 }
-.field input:focus, .field select:focus { border-color: var(--accent); }
+.field input:not([type="checkbox"]):focus, .field select:focus { border-color: var(--accent); }
+.platform-check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.platform-check input[type="checkbox"] { display: none; }
+.platform-check .check-box {
+  width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 6px;
+  background: #fff; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0;
+}
+.platform-check input[type="checkbox"]:checked + .check-box {
+  background: var(--accent); border-color: var(--accent);
+}
+.platform-check input[type="checkbox"]:checked + .check-box::after {
+  content: ""; display: block; width: 6px; height: 10px;
+  border: 2px solid #fff; border-top: none; border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+.platform-check span { font-size: .95rem; font-weight: 600; color: var(--text); }
 .field select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
@@ -399,11 +414,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="field">
           <label>Platform(s)</label>
           <div style="display:flex;gap:16px;padding:10px 0">
-            <label style="display:flex;align-items:center;gap:6px;font-size:.95rem;font-weight:600;color:var(--text);cursor:pointer">
-              <input type="checkbox" id="platformGSA" value="GSA" style="width:16px;height:16px;cursor:pointer" /> GSA
+            <label class="platform-check">
+              <input type="checkbox" id="platformGSA" value="GSA" />
+              <span class="check-box"></span>
+              <span>GSA</span>
             </label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:.95rem;font-weight:600;color:var(--text);cursor:pointer">
-              <input type="checkbox" id="platformLSA" value="LSA" style="width:16px;height:16px;cursor:pointer" /> LSA
+            <label class="platform-check">
+              <input type="checkbox" id="platformLSA" value="LSA" />
+              <span class="check-box"></span>
+              <span>LSA</span>
             </label>
           </div>
         </div>
