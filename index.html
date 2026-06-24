@@ -172,6 +172,28 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .divider { height: 1px; background: var(--border); margin: 20px 0; }
 .tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
 
+/* Dashboard */
+.dash-section-title { font-size: 1rem; font-weight: 700; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.dash-segment-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
+.dash-segment-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: #f8fafc; flex-wrap: wrap; gap: 8px; }
+.dash-segment-label { font-size: .82rem; font-weight: 700; color: var(--text); }
+.dash-segment-sub { font-size: .75rem; color: var(--muted); }
+.dash-metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0; }
+.dash-metric-cell { padding: 16px 18px; border-right: 1px solid var(--border); }
+.dash-metric-cell:last-child { border-right: none; }
+.dash-metric-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 6px; }
+.dash-metric-avg { font-size: 1.3rem; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+.dash-avg-red    { color: var(--red); }
+.dash-avg-yellow { color: var(--yellow); }
+.dash-avg-green  { color: var(--green); }
+.dash-avg-gray   { color: var(--muted); }
+.dash-dist { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+.dist-pill { font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+.dist-red    { background: var(--red-border);    color: var(--red); }
+.dist-yellow { background: var(--yellow-border); color: var(--yellow); }
+.dist-green  { background: var(--green-border);  color: var(--green); }
+.dash-no-data { color: var(--muted); font-size: .8rem; font-style: italic; }
+
 /* History report */
 .report-header { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 24px 28px; margin-bottom: 20px; box-shadow: var(--shadow); }
 .report-header h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
@@ -213,72 +235,53 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="container">
   <div class="header">
     <h1>Minimal Acceptable Standards</h1>
-    <p>Evaluate performance, upload bulk data, and track client history over time</p>
+    <p>Performance dashboard, bulk uploads, and client history</p>
   </div>
 
   <!-- Main nav -->
   <div class="main-nav">
-    <button class="nav-btn active" onclick="setView('evaluate')">📊 Evaluate</button>
+    <button class="nav-btn active" onclick="setView('evaluate')">📊 Dashboard</button>
     <button class="nav-btn" onclick="setView('bulk')">📤 Bulk Upload</button>
     <button class="nav-btn" onclick="setView('profiles')">👥 Client Profiles</button>
     <button class="nav-btn" onclick="setView('history')">📈 Client History</button>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════
-       EVALUATE
+       DASHBOARD
   ══════════════════════════════════════════════════════════════ -->
   <div id="viewEvaluate">
-    <div class="platform-tabs">
-      <button class="tab-btn active" data-platform="GSA" onclick="setPlatform('GSA')">GSA — Google Search Ads</button>
-      <button class="tab-btn" data-platform="LSA" onclick="setPlatform('LSA')">LSA — Local Services Ads</button>
-    </div>
-    <div id="dataNote" class="data-note"></div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Account Details</span>
-        <button class="btn btn-ghost btn-sm" onclick="clearAll()">✕ Clear All</button>
+    <!-- Filter bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header" style="margin-bottom:0;flex-wrap:wrap;gap:12px">
+        <span class="card-title">Portfolio Dashboard</span>
+        <button class="btn btn-ghost btn-sm" onclick="exportDashboard()">⬇ Download CSV</button>
       </div>
-      <div class="grid-2" style="margin-bottom:16px">
-        <div class="field">
-          <label for="clientName">Client Name</label>
-          <input type="text" id="clientName" placeholder="e.g. First Choice Automotive" list="evalClientSuggestions" oninput="updateSaveBar()" />
-          <datalist id="evalClientSuggestions"></datalist>
-        </div>
-        <div class="field">
-          <label for="reportMonth">Reporting Month</label>
-          <input type="month" id="reportMonth" oninput="updateSaveBar()" />
-        </div>
-      </div>
-      <div class="grid-2">
-        <div class="field">
-          <label for="shopType">Shop Type</label>
-          <select id="shopType" onchange="onShopTypeChange()">
-            <option value="">— Select shop type —</option>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;align-items:flex-end">
+        <div class="field" style="flex:0 0 auto">
+          <label>Platform</label>
+          <select id="dashPlatform" onchange="loadDashboard()" style="min-width:180px">
+            <option value="GSA">GSA — Google Search Ads</option>
+            <option value="LSA">LSA — Local Services Ads</option>
           </select>
         </div>
-        <div class="field">
-          <label for="serviceArea">Service Area</label>
-          <select id="serviceArea" onchange="onServiceAreaChange()">
-            <option value="">— Select shop type first —</option>
-          </select>
+        <div class="field" style="flex:0 0 auto">
+          <label>From</label>
+          <input type="month" id="dashFrom" onchange="loadDashboard()" />
         </div>
+        <div class="field" style="flex:0 0 auto">
+          <label>To</label>
+          <input type="month" id="dashTo" onchange="loadDashboard()" />
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()" style="margin-bottom:2px">✕ Clear dates</button>
       </div>
     </div>
-    <div id="metricsCard" class="card hidden">
-      <div class="card-header"><span class="card-title">Enter Metric Values</span></div>
-      <div class="grid-2" id="metricsInputs"></div>
-    </div>
-    <div id="resultsSection">
-      <div class="prompt-msg">Select a shop type and service area above to see benchmarks.</div>
-    </div>
-    <div id="saveBar" class="save-bar hidden">
-      <div class="save-bar-msg" id="saveBarMsg"></div>
-      <button class="btn btn-success" id="saveBtn" onclick="saveEntry()">💾 Save Entry</button>
+    <div id="dashboardResults">
+      <div class="prompt-msg">Loading dashboard…</div>
     </div>
     <div class="info-section">
       <div class="info-grid">
-        <div class="info-card"><strong>🔴 At Risk</strong>Performing below acceptable threshold. Requires optimization review and intervention.</div>
-        <div class="info-card"><strong>🟡 Healthy / Expected</strong>Performing within expected benchmark range. Continue standard optimization.</div>
+        <div class="info-card"><strong>🔴 At Risk</strong>Performing below acceptable threshold. Requires optimization review.</div>
+        <div class="info-card"><strong>🟡 Healthy / Expected</strong>Performing within expected benchmark range.</div>
         <div class="info-card"><strong>🟢 High Performing</strong>Exceeding benchmark expectations. Opportunity for scaling.</div>
       </div>
     </div>
@@ -586,193 +589,147 @@ function setView(view) {
   VIEWS.forEach(v => {
     document.getElementById("view"+v).classList.toggle("hidden", v.toLowerCase() !== view);
   });
-  document.querySelectorAll(".nav-btn").forEach((b, i) => {
+  document.querySelectorAll(".nav-btn").forEach(b => {
     b.classList.toggle("active", b.textContent.toLowerCase().includes(view));
   });
   if (view === "profiles") loadProfiles();
   if (view === "history")  loadClientSuggestions();
   if (view === "bulk")     updateBulkHints();
-  if (view === "evaluate") loadEvalSuggestions();
+  if (view === "evaluate") loadDashboard();
 }
 
-// ─── EVALUATE ────────────────────────────────────────────────────────────────
-function setPlatform(platform) {
-  appState = { platform, shopType: "", serviceArea: "" };
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.platform === platform));
-  document.getElementById("dataNote").innerHTML = PLATFORM_NOTES[platform];
-  renderShopTypes();
-  renderServiceAreas();
-  hideMetrics();
-  renderResults([]);
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+let dashboardData = []; // last fetched rows, used for export
+
+function clearDashFilters() {
+  document.getElementById("dashFrom").value = "";
+  document.getElementById("dashTo").value   = "";
+  loadDashboard();
 }
 
-function renderShopTypes() {
-  const sel = document.getElementById("shopType");
-  sel.innerHTML = '<option value="">— Select shop type —</option>';
-  getShopTypes(appState.platform).forEach(s => {
-    const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
-  });
-}
-
-function renderServiceAreas() {
-  const sel = document.getElementById("serviceArea");
-  sel.innerHTML = '<option value="">— Select shop type first —</option>';
-  if (!appState.shopType) return;
-  getServiceAreas(appState.platform, appState.shopType).forEach(a => {
-    const o = document.createElement("option"); o.value = a; o.textContent = a; sel.appendChild(o);
-  });
-}
-
-function onShopTypeChange() {
-  appState.shopType = document.getElementById("shopType").value;
-  appState.serviceArea = "";
-  renderServiceAreas();
-  hideMetrics();
-  renderResults([]);
-}
-
-function onServiceAreaChange() {
-  appState.serviceArea = document.getElementById("serviceArea").value;
-  appState.serviceArea ? renderMetricInputs() : (hideMetrics(), renderResults([]));
-}
-
-function hideMetrics() {
-  document.getElementById("metricsCard").classList.add("hidden");
-  document.getElementById("metricsInputs").innerHTML = "";
-  document.getElementById("saveBar").classList.add("hidden");
-}
-
-function clearAll() {
-  document.getElementById("clientName").value = "";
-  document.getElementById("reportMonth").value = "";
-  document.getElementById("shopType").value = "";
-  document.getElementById("serviceArea").innerHTML = '<option value="">— Select shop type first —</option>';
-  appState.shopType = ""; appState.serviceArea = "";
-  hideMetrics(); renderResults([]);
-}
-
-function renderMetricInputs() {
-  const benchmarks = getMetrics(appState.platform, appState.shopType, appState.serviceArea);
-  const grid = document.getElementById("metricsInputs");
-  grid.innerHTML = "";
-  benchmarks.forEach(bench => {
-    const div = document.createElement("div"); div.className = "field";
-    if (bench.noData) {
-      div.innerHTML = `<label>${bench.m}</label>
-        <div style="padding:10px 14px;border:1.5px dashed var(--border);border-radius:8px;font-size:.83rem;color:var(--muted);font-style:italic;background:#f8f9fa;">Not enough data to provide an output</div>`;
-    } else {
-      div.innerHTML = `<label>${bench.m}</label>
-        <div class="metric-input-wrap">
-          <input type="number" min="0" step="any" id="input-${bench.m.replace(/\s+/g,'-')}"
-            placeholder="${bench.pct ? 'e.g. 2.5' : 'e.g. 150'}" oninput="onInputChange()" />
-          <span class="unit">${bench.pct ? '%' : '$'}</span>
-        </div>`;
-    }
-    grid.appendChild(div);
-  });
-  document.getElementById("metricsCard").classList.remove("hidden");
-  renderResults(benchmarks.map(b => ({ bench: b, value: null })));
-  updateSaveBar();
-}
-
-function onInputChange() {
-  const benchmarks = getMetrics(appState.platform, appState.shopType, appState.serviceArea);
-  const results = benchmarks.map(bench => {
-    const el = document.getElementById("input-" + bench.m.replace(/\s+/g,"-"));
-    const val = el ? parseFloat(el.value) : NaN;
-    return { bench, value: isNaN(val) ? null : val };
-  });
-  renderResults(results);
-  updateSaveBar();
-}
-
-function updateSaveBar() {
-  const bar = document.getElementById("saveBar");
-  const msg = document.getElementById("saveBarMsg");
-  const btn = document.getElementById("saveBtn");
-  if (!appState.shopType || !appState.serviceArea) { bar.classList.add("hidden"); return; }
-  bar.classList.remove("hidden");
-  const client = document.getElementById("clientName").value.trim();
-  const month  = document.getElementById("reportMonth").value;
-  const hasValues = getMetrics(appState.platform, appState.shopType, appState.serviceArea)
-    .filter(b => !b.noData)
-    .some(b => { const el = document.getElementById("input-" + b.m.replace(/\s+/g,"-")); return el && el.value !== ""; });
-  if (!client) { msg.innerHTML = `Enter a <strong>client name</strong> to save`; btn.disabled = true; }
-  else if (!month) { msg.innerHTML = `Select a <strong>reporting month</strong> to save`; btn.disabled = true; }
-  else if (!hasValues) { msg.innerHTML = `Enter at least one metric value to save`; btn.disabled = true; }
-  else { msg.innerHTML = `Save <strong>${client}</strong> — ${fmtMonth(month)}`; btn.disabled = false; }
-}
-
-async function saveEntry() {
-  const client = document.getElementById("clientName").value.trim();
-  const month  = document.getElementById("reportMonth").value;
-  const benchmarks = getMetrics(appState.platform, appState.shopType, appState.serviceArea).filter(b => !b.noData);
-  const rows = [];
-  benchmarks.forEach(bench => {
-    const el = document.getElementById("input-" + bench.m.replace(/\s+/g,"-"));
-    if (!el || el.value === "") return;
-    const value = parseFloat(el.value);
-    rows.push({ client_name: client, report_month: month, platform: appState.platform, shop_type: appState.shopType, service_area: appState.serviceArea, metric: bench.m, value, status: classify(value, bench), reliability: bench.r });
-  });
-  if (!rows.length) { showToast("No values to save", "error"); return; }
-  const btn = document.getElementById("saveBtn");
-  btn.disabled = true; btn.textContent = "Saving…";
-  const { error } = await db.from("metric_entries").insert(rows);
-  btn.textContent = "💾 Save Entry"; btn.disabled = false;
-  error ? showToast("Error: " + error.message, "error") : showToast(`✓ Saved ${rows.length} metrics for ${client}`, "success");
-}
-
-function renderResults(results) {
-  const section = document.getElementById("resultsSection");
-  const hasNoData = results.some(r => r.bench.noData);
-  if (!results.length || (results.every(r => r.value === null) && !hasNoData)) {
-    section.innerHTML = `<div class="prompt-msg">${!appState.shopType || !appState.serviceArea ? "Select a shop type and service area above to see benchmarks." : "Enter metric values above to see performance classifications."}</div>`;
-    return;
-  }
-  const active = results.filter(r => r.bench.noData || r.value !== null);
-  if (!active.length) { section.innerHTML = `<div class="prompt-msg">Enter metric values above to see performance classifications.</div>`; return; }
-  const cards = active.map(({ bench, value }) => {
-    if (bench.noData) return `<div class="result-card empty">
-      <div class="result-metric-name">${bench.m}</div>
-      <div class="stoplight"><div class="stoplight-dot dot-gray"></div><div class="stoplight-label label-gray">No Data Available</div></div>
-      <p style="font-size:.82rem;color:var(--muted);font-style:italic;">Not enough data to provide a benchmark output for this combination.</p></div>`;
-    const status = classify(value, bench);
-    const hasYellow = bench.low < bench.high;
-    const dotClass  = {red:"dot-red",yellow:"dot-yellow",green:"dot-green"}[status];
-    const labelClass = {red:"label-red",yellow:"label-yellow",green:"label-green"}[status];
-    const labelText  = {red:"At Risk",yellow:"Healthy / Expected",green:"High Performing"}[status];
-    const emoji      = {red:"🔴",yellow:"🟡",green:"🟢"}[status];
-    const yr = fmtRange(bench);
-    const rangesHtml = bench.d === "lower_better"
-      ? `<div class="range-row"><span class="range-label" style="color:var(--green)">🟢 High Performing</span><span class="range-value">&lt; ${fmt(bench.low,bench.pct)}</span></div>${hasYellow?`<div class="range-row"><span class="range-label" style="color:var(--yellow)">🟡 Healthy</span><span class="range-value">${yr}</span></div>`:""}<div class="range-row"><span class="range-label" style="color:var(--red)">🔴 At Risk</span><span class="range-value">&gt; ${fmt(bench.high,bench.pct)}</span></div>`
-      : `<div class="range-row"><span class="range-label" style="color:var(--red)">🔴 At Risk</span><span class="range-value">&lt; ${fmt(bench.low,bench.pct)}</span></div>${hasYellow?`<div class="range-row"><span class="range-label" style="color:var(--yellow)">🟡 Healthy</span><span class="range-value">${yr}</span></div>`:""}<div class="range-row"><span class="range-label" style="color:var(--green)">🟢 High Performing</span><span class="range-value">&gt; ${fmt(bench.high,bench.pct)}</span></div>`;
-    const minV = bench.low * 0.3, maxV = bench.high * 1.8, rng = maxV - minV;
-    const rp = ((bench.low - minV)/rng*100).toFixed(1), gp = ((bench.high - minV)/rng*100).toFixed(1);
-    const mp = Math.max(2, Math.min(98, (value - minV)/rng*100));
-    const gauge = bench.d === "lower_better"
-      ? `<div class="gauge-wrap"><div class="gauge-bar" style="background:linear-gradient(to right,#48bb78 0%,#48bb78 ${rp}%,#ecc94b ${rp}%,#ecc94b ${gp}%,#e53e3e ${gp}%,#e53e3e 100%)"><div class="gauge-marker" style="left:${mp}%"></div></div></div>`
-      : `<div class="gauge-wrap"><div class="gauge-bar" style="background:linear-gradient(to right,#e53e3e 0%,#e53e3e ${rp}%,#ecc94b ${rp}%,#ecc94b ${gp}%,#48bb78 ${gp}%,#48bb78 100%)"><div class="gauge-marker" style="left:${mp}%"></div></div></div>`;
-    return `<div class="result-card ${status}">
-      <div class="result-metric-name">${bench.m}</div>
-      <div class="stoplight"><div class="stoplight-dot ${dotClass}"></div><div>
-        <div class="stoplight-label ${labelClass}">${emoji} ${labelText}</div>
-        <div style="font-size:.82rem;color:var(--muted)">Your value: <strong>${fmt(value,bench.pct)}</strong></div>
-      </div></div>
-      ${gauge}
-      <div class="result-ranges">${rangesHtml}</div>
-      ${status==="red"?`<div style="margin:12px 0 10px;padding:10px 12px;background:#fff5f5;border:1.5px solid #fed7d7;border-radius:8px;font-size:.8rem;color:#822727;line-height:1.5;">⚠️ <strong>Flag for ads team review.</strong> Escalate for a deeper evaluation — review targeting, bidding strategy, negatives, conversion tracking, and account-level context before drawing conclusions.</div>`:""}
-      <span class="reliability-badge ${reliabilityClass(bench.r)}">Sample: ${bench.r}</span>
-    </div>`;
-  }).join("");
-  section.innerHTML = `<div class="results-grid">${cards}</div>`;
-}
-
-async function loadEvalSuggestions() {
+async function loadDashboard() {
   if (!db) return;
-  const { data } = await db.from("client_profiles").select("client_name");
-  if (!data) return;
-  const dl = document.getElementById("evalClientSuggestions");
-  dl.innerHTML = [...new Set(data.map(r=>r.client_name))].sort().map(n=>`<option value="${n}">`).join("");
+  const section  = document.getElementById("dashboardResults");
+  const platform = document.getElementById("dashPlatform").value;
+  const from     = document.getElementById("dashFrom").value;
+  const to       = document.getElementById("dashTo").value;
+
+  section.innerHTML = `<div class="prompt-msg">Loading…</div>`;
+
+  let query = db.from("metric_entries").select("*").eq("platform", platform).order("report_month");
+  if (from) query = query.gte("report_month", from);
+  if (to)   query = query.lte("report_month", to);
+
+  const { data, error } = await query;
+  if (error) { section.innerHTML = `<div class="prompt-msg">Error: ${error.message}</div>`; return; }
+  if (!data?.length) { section.innerHTML = `<div class="prompt-msg">No data found for the selected filters. Upload monthly data first.</div>`; return; }
+  dashboardData = data;
+  renderDashboard(data, platform);
+}
+
+function renderDashboard(rows, platform) {
+  const section = document.getElementById("dashboardResults");
+  const metrics = PLATFORM_METRICS[platform];
+
+  // Group rows by shop_type → service_area → metric → [values]
+  // Per client, average their values across the selected date range first, then aggregate across clients
+  const clientMap = {}; // client_name → { shop_type, service_area, metric → [values] }
+  rows.forEach(r => {
+    if (!clientMap[r.client_name]) clientMap[r.client_name] = { shop_type: r.shop_type, service_area: r.service_area, metrics: {} };
+    if (!clientMap[r.client_name].metrics[r.metric]) clientMap[r.client_name].metrics[r.metric] = [];
+    clientMap[r.client_name].metrics[r.metric].push(parseFloat(r.value));
+  });
+
+  // Build segment map: shop_type → service_area → metric → [client averages]
+  const segments = {};
+  const clientNames = {}; // track client counts per segment
+  Object.entries(clientMap).forEach(([name, c]) => {
+    const key = `${c.shop_type}||${c.service_area}`;
+    if (!segments[key]) { segments[key] = { shop_type: c.shop_type, service_area: c.service_area, metrics: {} }; clientNames[key] = new Set(); }
+    clientNames[key].add(name);
+    metrics.forEach(m => {
+      if (!c.metrics[m]) return;
+      const avg = c.metrics[m].reduce((a,b)=>a+b,0) / c.metrics[m].length;
+      if (!segments[key].metrics[m]) segments[key].metrics[m] = [];
+      segments[key].metrics[m].push({ name, avg });
+    });
+  });
+
+  // Sort segments by shop type then service area
+  const sorted = Object.values(segments).sort((a,b) => a.shop_type.localeCompare(b.shop_type) || a.service_area.localeCompare(b.service_area));
+
+  // Group by shop type for section headers
+  const byShopType = {};
+  sorted.forEach(seg => {
+    if (!byShopType[seg.shop_type]) byShopType[seg.shop_type] = [];
+    byShopType[seg.shop_type].push(seg);
+  });
+
+  const fmtV = (v, bench) => bench.pct ? v.toFixed(1)+"%" : "$"+v.toFixed(0);
+
+  let html = "";
+  for (const [shopType, segs] of Object.entries(byShopType)) {
+    html += `<div class="dash-section-title"><span class="tag">${shopType}</span></div>`;
+    segs.forEach(seg => {
+      const segKey = `${seg.shop_type}||${seg.service_area}`;
+      const clientCount = clientNames[segKey]?.size || 0;
+      const metricCells = metrics.map(m => {
+        const bench = getBench(platform, seg.shop_type, seg.service_area, m);
+        const clientAvgs = seg.metrics[m] || [];
+        if (!bench || bench.noData || !clientAvgs.length) {
+          return `<div class="dash-metric-cell">
+            <div class="dash-metric-label">${m}</div>
+            <div class="dash-no-data">No data</div>
+          </div>`;
+        }
+        // Portfolio average across client averages
+        const portfolioAvg = clientAvgs.reduce((a,b) => a + b.avg, 0) / clientAvgs.length;
+        const avgStatus = classify(portfolioAvg, bench);
+        // Distribution count
+        const dist = { red: 0, yellow: 0, green: 0 };
+        clientAvgs.forEach(c => { dist[classify(c.avg, bench)]++; });
+        const distHtml = Object.entries(dist).filter(([,n])=>n>0)
+          .map(([s,n]) => `<span class="dist-pill dist-${s}">${{red:"🔴",yellow:"🟡",green:"🟢"}[s]} ${n}</span>`).join("");
+        return `<div class="dash-metric-cell">
+          <div class="dash-metric-label">${m}</div>
+          <div class="dash-metric-avg dash-avg-${avgStatus}">${fmtV(portfolioAvg, bench)}</div>
+          <div class="dash-dist">${distHtml}</div>
+        </div>`;
+      }).join("");
+
+      html += `<div class="dash-segment-card">
+        <div class="dash-segment-header">
+          <div>
+            <div class="dash-segment-label">${seg.service_area}</div>
+            <div class="dash-segment-sub">${clientCount} client${clientCount !== 1 ? "s" : ""}</div>
+          </div>
+        </div>
+        <div class="dash-metric-grid">${metricCells}</div>
+      </div>`;
+    });
+  }
+
+  section.innerHTML = html;
+}
+
+function exportDashboard() {
+  if (!dashboardData.length) { showToast("No data to export", "error"); return; }
+  const platform = document.getElementById("dashPlatform").value;
+  const from     = document.getElementById("dashFrom").value;
+  const to       = document.getElementById("dashTo").value;
+
+  const headers = ["Client Name","Platform","Shop Type","Service Area","Reporting Month","Metric","Value","Status","Reliability"];
+  const rows = dashboardData.map(r => [
+    r.client_name, r.platform, r.shop_type, r.service_area,
+    r.report_month, r.metric, r.value, r.status, r.reliability
+  ]);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  XLSX.utils.book_append_sheet(wb, ws, "Performance Data");
+  const fileName = `performance-${platform}${from?"-from-"+from:""}${to?"-to-"+to:""}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast(`✓ Downloaded ${fileName}`, "success");
 }
 
 // ─── BULK UPLOAD ─────────────────────────────────────────────────────────────
@@ -1488,12 +1445,10 @@ async function deleteClientMonth(clientName, month, platform) {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-document.getElementById("dataNote").innerHTML = PLATFORM_NOTES["GSA"];
-document.getElementById("reportMonth").value = new Date().toISOString().slice(0,7);
-document.getElementById("bulkMonth").value   = new Date().toISOString().slice(0,7);
-renderShopTypes();
+document.getElementById("bulkMonth").value = new Date().toISOString().slice(0,7);
 renderProfileShopTypes();
 updateBulkHints();
+loadDashboard();
 </script>
 </body>
 </html>
