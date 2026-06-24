@@ -286,15 +286,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <button class="btn btn-ghost btn-sm" onclick="clearDashFilters()" style="margin-bottom:2px">✕ Clear dates</button>
       </div>
     </div>
-    <div id="dashboardResults">
-      <div class="prompt-msg">Loading dashboard…</div>
-    </div>
-    <div class="info-section">
+    <div class="info-section" style="margin-bottom:16px;margin-top:0">
       <div class="info-grid">
         <div class="info-card"><strong>🔴 At Risk</strong>Performing below acceptable threshold. Requires optimization review.</div>
         <div class="info-card"><strong>🟡 Healthy / Expected</strong>Performing within expected benchmark range.</div>
         <div class="info-card"><strong>🟢 High Performing</strong>Exceeding benchmark expectations. Opportunity for scaling.</div>
       </div>
+    </div>
+    <div id="dashboardResults">
+      <div class="prompt-msg">Loading dashboard…</div>
     </div>
 
     <!-- Bulk data management accordion -->
