@@ -540,16 +540,19 @@ const PLATFORM_METRICS = {
 
 // Column name synonyms for auto-detection
 const COL_ALIASES = {
-  clientName:   ["client name","client","account name","account","name","campaign name"],
+  clientName:   ["client name","client","account name","account","name","campaign name","business name"],
   CPL:          ["cpl","cost per lead","cost per qualified lead"],
   CPC:          ["cpc","cost per click","avg. cpc","avg cpc"],
   CTR:          ["ctr","click-through rate","click through rate","clickthrough rate"],
   CR:           ["cr","conversion rate","conv. rate","conv rate","conversions rate"],
   "Lead Quality Rate": ["lead quality rate","lead quality","quality rate","lqr"],
-  // Raw columns used to compute CPL and CR automatically
-  _cost:        ["cost","spend","total cost","amount spent"],
-  _conversions: ["conversions","conv.","qualified leads","qualified conversions"],
-  _clicks:      ["clicks","click"],
+  // Raw columns for GSA computed metrics
+  _cost:            ["cost","spend","total cost","amount spent","current period total cost"],
+  _conversions:     ["conversions","conv.","qualified leads","qualified conversions"],
+  _clicks:          ["clicks","click"],
+  // Raw columns for LSA computed metrics
+  _charged_leads:   ["current period charged leads","charged leads"],
+  _connected_calls: ["current period connected phone calls","connected phone calls","connected calls"],
 };
 
 const PLATFORM_NOTES = {
@@ -839,10 +842,12 @@ function onBulkPlatformChange() { updateBulkHints(); }
 
 function updateBulkHints() {
   const platform = document.getElementById("bulkPlatform").value;
-  const metrics = PLATFORM_METRICS[platform];
+  const metrics  = PLATFORM_METRICS[platform];
   document.getElementById("bulkMetricHint").textContent = `Metrics: ${metrics.join(", ")}`;
-  document.getElementById("expectedCols").innerHTML = ` <strong>Client Name</strong>, ` +
-    metrics.map(m => `<strong>${m}</strong>`).join(", ");
+  const colHints = platform === "GSA"
+    ? `<strong>Account Name</strong>, <strong>Avg. CPC</strong>, <strong>CTR</strong>, <strong>Cost</strong>, <strong>Conversions</strong> (qualified), <strong>Clicks</strong>`
+    : `<strong>Business Name</strong>, <strong>Current Period Total Cost</strong>, <strong>Current Period Charged Leads</strong>, <strong>Current Period Connected Phone Calls</strong>`;
+  document.getElementById("expectedCols").innerHTML = ` ${colHints} — CPL and ${platform === "GSA" ? "CR" : "Lead Quality Rate"} are calculated automatically.`;
 }
 
 function handleFileSelect(e) { processFile(e.target.files[0]); }
@@ -931,19 +936,28 @@ async function parseBulkData(rawRows) {
     if (!clientName) return null;
     const profile = profileMap[clientName.toLowerCase()] || null;
 
-    // For GSA, compute CPL and CR from raw Cost/Conversions/Clicks rather than
-    // pre-calculated columns, because the team replaces Conversions with
-    // qualified leads from Agency Analytics before uploading.
-    const cost    = colMap._cost        ? parseMetricValue(row[colMap._cost],        false) : null;
-    const convs   = colMap._conversions ? parseMetricValue(row[colMap._conversions],  false) : null;
-    const clicks  = colMap._clicks      ? parseMetricValue(row[colMap._clicks],       false) : null;
-    const computedCPL = (cost !== null && convs !== null && convs > 0) ? cost / convs : null;
-    const computedCR  = (convs !== null && clicks !== null && clicks > 0) ? (convs / clicks) * 100 : null;
+    // GSA: CPL = Cost / Conversions (team replaces Conversions with qualified leads)
+    //      CR  = (Conversions / Clicks) × 100
+    // LSA: CPL = Current Period Total Cost / Current Period Charged Leads
+    //      Lead Quality Rate = (Charged Leads / Connected Phone Calls) × 100
+    const cost          = colMap._cost          ? parseMetricValue(row[colMap._cost],          false) : null;
+    const convs         = colMap._conversions   ? parseMetricValue(row[colMap._conversions],   false) : null;
+    const clicks        = colMap._clicks        ? parseMetricValue(row[colMap._clicks],        false) : null;
+    const chargedLeads  = colMap._charged_leads  ? parseMetricValue(row[colMap._charged_leads],  false) : null;
+    const connectedCalls= colMap._connected_calls? parseMetricValue(row[colMap._connected_calls],false) : null;
+
+    const gsaCPL = (cost !== null && convs !== null && convs > 0)          ? cost / convs                       : null;
+    const gsaCR  = (convs !== null && clicks !== null && clicks > 0)        ? (convs / clicks) * 100             : null;
+    const lsaCPL = (cost !== null && chargedLeads !== null && chargedLeads > 0) ? cost / chargedLeads            : null;
+    const lsaLQR = (chargedLeads !== null && connectedCalls !== null && connectedCalls > 0)
+                    ? (chargedLeads / connectedCalls) * 100 : null;
 
     const metricValues = {};
     metrics.forEach(m => {
-      if (platform === "GSA" && m === "CPL") { metricValues[m] = computedCPL; return; }
-      if (platform === "GSA" && m === "CR")  { metricValues[m] = computedCR;  return; }
+      if (platform === "GSA" && m === "CPL") { metricValues[m] = gsaCPL; return; }
+      if (platform === "GSA" && m === "CR")  { metricValues[m] = gsaCR;  return; }
+      if (platform === "LSA" && m === "CPL") { metricValues[m] = lsaCPL; return; }
+      if (platform === "LSA" && m === "Lead Quality Rate") { metricValues[m] = lsaLQR; return; }
       const col = colMap[m];
       const bench = profile ? getBench(platform, profile.shop_type, profile.service_area, m) : null;
       const isPct = bench ? bench.pct : (m === "CTR" || m === "Lead Quality Rate");
