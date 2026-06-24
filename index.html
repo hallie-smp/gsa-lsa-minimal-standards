@@ -253,7 +253,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   ══════════════════════════════════════════════════════════════ -->
   <div id="viewBulk" class="hidden">
     <div class="card">
-      <div class="card-header"><span class="card-title">Upload Settings</span></div>
+      <div class="card-header"><span class="card-title">Step 1 — Upload Settings</span></div>
       <div class="grid-3">
         <div class="field">
           <label>Platform</label>
@@ -263,8 +263,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           </select>
         </div>
         <div class="field">
-          <label>Reporting Month</label>
-          <input type="month" id="bulkMonth" />
+          <label>Reporting Month <span style="color:var(--red)">*</span></label>
+          <input type="month" id="bulkMonth" style="border-color:var(--accent)" />
         </div>
         <div class="field" style="display:flex;align-items:flex-end">
           <div style="font-size:.8rem;color:var(--muted);line-height:1.5;padding-bottom:2px;">
@@ -276,7 +276,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
 
     <div class="card">
-      <div class="card-header"><span class="card-title">Excel File</span></div>
+      <div class="card-header"><span class="card-title">Step 2 — Upload Excel File</span></div>
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
         ondragover="event.preventDefault();this.classList.add('drag')"
         ondragleave="this.classList.remove('drag')"
@@ -287,7 +287,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <p>Supports .xlsx, .xls, .csv</p>
         <p id="uploadFileName" style="margin-top:8px;color:var(--accent);font-weight:600"></p>
       </div>
-      <div style="margin-top:16px;font-size:.82rem;color:var(--muted)">
+      <div id="uploadConfirm" style="display:none;margin-top:14px;background:#f0fff4;border:1.5px solid #c6f6d5;border-radius:8px;padding:12px 16px;font-size:.87rem;color:#276749;font-weight:600;">
+        ✓ File parsed successfully — review and save below.
+      </div>
+      <div style="margin-top:12px;font-size:.82rem;color:var(--muted)">
         <strong style="color:var(--text)">Expected columns</strong> (column names are flexible — the app will auto-detect):
         <span id="expectedCols"></span>
       </div>
@@ -302,7 +305,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div id="viewProfiles" class="hidden">
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Add New Profile</span>
+        <span class="card-title" id="profileFormTitle">Add New Profile</span>
+        <button class="btn btn-ghost btn-sm hidden" id="cancelEditBtn" onclick="cancelEditProfile()">✕ Cancel Edit</button>
       </div>
       <div class="grid-4" style="margin-bottom:16px">
         <div class="field">
@@ -329,7 +333,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           </select>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="saveProfile()">+ Add Profile</button>
+      <button class="btn btn-primary" id="profileSaveBtn" onclick="saveProfile()">+ Add Profile</button>
     </div>
 
     <div class="card">
@@ -352,8 +356,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div style="display:flex;gap:12px;align-items:flex-end">
         <div class="field" style="flex:1">
           <label for="historyClient">Client Name</label>
-          <input type="text" id="historyClient" placeholder="e.g. First Choice Automotive" list="clientSuggestions" />
-          <datalist id="clientSuggestions"></datalist>
+          <select id="historyClient" onchange="if(this.value) loadHistory()">
+            <option value="">— Select a client —</option>
+          </select>
         </div>
         <button class="btn btn-primary" onclick="loadHistory()">Search</button>
       </div>
@@ -744,7 +749,14 @@ function handleFileDrop(e) { processFile(e.dataTransfer.files[0]); }
 
 function processFile(file) {
   if (!file) return;
+  const month = document.getElementById("bulkMonth").value;
+  if (!month) {
+    showToast("Select a reporting month before uploading", "error");
+    document.getElementById("bulkMonth").focus();
+    return;
+  }
   document.getElementById("uploadFileName").textContent = file.name;
+  document.getElementById("uploadConfirm").style.display = "none";
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -790,6 +802,7 @@ async function parseBulkData(rawRows) {
   profiles.forEach(p => { profileMap[p.client_name.toLowerCase().trim()] = p; });
 
   // Parse each row
+  document.getElementById("uploadConfirm").style.display = "block";
   bulkParsedRows = rawRows.map(row => {
     const clientName = String(row[colMap.clientName] || "").trim();
     if (!clientName) return null;
@@ -930,11 +943,43 @@ async function saveBulkData() {
   if (error) {
     showToast("Error saving: " + error.message, "error");
   } else {
-    showToast(`✓ Saved ${rows.length} metric entries for ${fmtMonth(month)}`, "success");
+    const confirmBanner = document.getElementById("bulkPreviewSection");
+    confirmBanner.innerHTML = `<div style="background:#f0fff4;border:1.5px solid #c6f6d5;border-radius:var(--radius);padding:24px;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:8px">✅</div>
+      <div style="font-weight:700;font-size:1rem;color:#276749;margin-bottom:4px">Data saved successfully!</div>
+      <div style="font-size:.87rem;color:#2f855a;margin-bottom:16px">${rows.length} metric entries saved for <strong>${fmtMonth(month)}</strong> across ${matched.length} clients.</div>
+      <button class="btn btn-primary" onclick="setView('history')">📈 View Client History</button>
+    </div>`;
+    showToast(`✓ Saved ${rows.length} entries for ${fmtMonth(month)}`, "success");
   }
 }
 
 // ─── CLIENT PROFILES ─────────────────────────────────────────────────────────
+let editingProfileId = null;
+
+function startEditProfile(profile) {
+  editingProfileId = profile.id;
+  document.getElementById("profileName").value = profile.client_name;
+  document.getElementById("profilePlatform").value = profile.platform;
+  renderProfileShopTypes();
+  document.getElementById("profileShopType").value = profile.shop_type;
+  renderProfileServiceAreas();
+  document.getElementById("profileServiceArea").value = profile.service_area;
+  document.getElementById("profileFormTitle").textContent = `Editing: ${profile.client_name}`;
+  document.getElementById("profileSaveBtn").textContent = "✓ Save Changes";
+  document.getElementById("cancelEditBtn").classList.remove("hidden");
+  document.getElementById("profileName").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function cancelEditProfile() {
+  editingProfileId = null;
+  document.getElementById("profileName").value = "";
+  document.getElementById("profileFormTitle").textContent = "Add New Profile";
+  document.getElementById("profileSaveBtn").textContent = "+ Add Profile";
+  document.getElementById("cancelEditBtn").classList.add("hidden");
+  renderProfileShopTypes();
+}
+
 function renderProfileShopTypes() {
   const platform = document.getElementById("profilePlatform").value;
   const sel = document.getElementById("profileShopType");
@@ -961,14 +1006,22 @@ async function saveProfile() {
   const platform= document.getElementById("profilePlatform").value;
   const shopType= document.getElementById("profileShopType").value;
   const area    = document.getElementById("profileServiceArea").value;
-  if (!name || !shopType || !area) { showToast("Fill in all fields to add a profile", "error"); return; }
-  const { error } = await db.from("client_profiles").upsert(
-    { client_name: name, platform, shop_type: shopType, service_area: area },
-    { onConflict: "client_name,platform" }
-  );
+  if (!name || !shopType || !area) { showToast("Fill in all fields", "error"); return; }
+
+  let error;
+  if (editingProfileId) {
+    ({ error } = await db.from("client_profiles").update(
+      { client_name: name, platform, shop_type: shopType, service_area: area }
+    ).eq("id", editingProfileId));
+  } else {
+    ({ error } = await db.from("client_profiles").upsert(
+      { client_name: name, platform, shop_type: shopType, service_area: area },
+      { onConflict: "client_name,platform" }
+    ));
+  }
   if (error) { showToast("Error: " + error.message, "error"); return; }
-  showToast(`✓ Profile saved for ${name}`, "success");
-  document.getElementById("profileName").value = "";
+  showToast(`✓ Profile ${editingProfileId ? "updated" : "saved"} for ${name}`, "success");
+  cancelEditProfile();
   loadProfiles();
 }
 
@@ -983,12 +1036,16 @@ async function loadProfiles() {
     <thead><tr><th>Client Name</th><th>Platform</th><th>Shop Type</th><th>Service Area</th><th></th></tr></thead>
     <tbody>`;
   data.forEach(p => {
+    const safeProfile = encodeURIComponent(JSON.stringify(p));
     html += `<tr>
       <td><strong>${p.client_name}</strong></td>
       <td><span class="tag">${p.platform}</span></td>
       <td>${p.shop_type}</td>
       <td>${p.service_area}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteProfile('${p.id}','${p.client_name}')">Delete</button></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="startEditProfile(JSON.parse(decodeURIComponent('${safeProfile}')))">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProfile('${p.id}','${p.client_name}')">Delete</button>
+      </td>
     </tr>`;
   });
   html += `</tbody></table></div>`;
@@ -1006,12 +1063,15 @@ async function loadClientSuggestions() {
   if (!db) return;
   const { data } = await db.from("client_profiles").select("client_name");
   if (!data) return;
-  const dl = document.getElementById("clientSuggestions");
-  dl.innerHTML = [...new Set(data.map(r=>r.client_name))].sort().map(n=>`<option value="${n}">`).join("");
+  const sel = document.getElementById("historyClient");
+  const current = sel.value;
+  const names = [...new Set(data.map(r=>r.client_name))].sort();
+  sel.innerHTML = `<option value="">— Select a client —</option>` +
+    names.map(n => `<option value="${n}"${n===current?" selected":""}>${n}</option>`).join("");
 }
 
 async function loadHistory() {
-  const client  = document.getElementById("historyClient").value.trim();
+  const client  = document.getElementById("historyClient").value;
   const section = document.getElementById("historyResults");
   if (!client) { showToast("Enter a client name", "error"); return; }
   section.innerHTML = `<div class="prompt-msg">Loading…</div>`;
