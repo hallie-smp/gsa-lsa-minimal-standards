@@ -5,384 +5,215 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Minimal Acceptable Standards</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f6fa; --card: #fff; --border: #e2e8f0; --text: #1a202c; --muted: #718096;
+  --accent: #3b5bdb; --accent-light: #eef2ff;
+  --red: #e53e3e; --red-bg: #fff5f5; --red-border: #fed7d7;
+  --yellow: #d69e2e; --yellow-bg: #fffff0; --yellow-border: #fefcbf;
+  --green: #38a169; --green-bg: #f0fff4; --green-border: #c6f6d5;
+  --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 16px 64px; }
+.container { max-width: 900px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 28px; }
+.header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -.5px; }
+.header p { color: var(--muted); margin-top: 6px; font-size: .95rem; }
 
-  :root {
-    --bg: #f4f6fa;
-    --card: #ffffff;
-    --border: #e2e8f0;
-    --text: #1a202c;
-    --muted: #718096;
-    --accent: #3b5bdb;
-    --accent-light: #eef2ff;
-    --red: #e53e3e;
-    --red-bg: #fff5f5;
-    --red-border: #fed7d7;
-    --yellow: #d69e2e;
-    --yellow-bg: #fffff0;
-    --yellow-border: #fefcbf;
-    --green: #38a169;
-    --green-bg: #f0fff4;
-    --green-border: #c6f6d5;
-    --radius: 12px;
-    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
-  }
+/* Nav */
+.main-nav { display: flex; gap: 6px; margin-bottom: 24px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow); flex-wrap: wrap; }
+.nav-btn { flex: 1; min-width: 120px; padding: 9px 14px; border: none; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; transition: all .2s; background: transparent; color: var(--muted); white-space: nowrap; }
+.nav-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(59,91,219,.3); }
+.nav-btn:not(.active):hover { background: var(--accent-light); color: var(--accent); }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 24px 16px 48px;
-  }
+/* Platform tabs */
+.platform-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow); }
+.tab-btn { flex: 1; padding: 9px 16px; border: none; border-radius: 8px; font-size: .95rem; font-weight: 600; cursor: pointer; transition: all .2s; background: transparent; color: var(--muted); }
+.tab-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(59,91,219,.3); }
+.tab-btn:not(.active):hover { background: var(--accent-light); color: var(--accent); }
 
-  .container { max-width: 800px; margin: 0 auto; }
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+.card-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 
-  .header { text-align: center; margin-bottom: 28px; }
-  .header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -.5px; }
-  .header p { color: var(--muted); margin-top: 6px; font-size: .95rem; }
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
 
-  /* Main nav */
-  .main-nav {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 6px;
-    box-shadow: var(--shadow);
-  }
-  .nav-btn {
-    flex: 1;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all .2s;
-    background: transparent;
-    color: var(--muted);
-  }
-  .nav-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(59,91,219,.3); }
-  .nav-btn:not(.active):hover { background: var(--accent-light); color: var(--accent); }
+/* Fields */
+.field label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 1rem; color: var(--text); background: #fff; appearance: none; outline: none; transition: border-color .15s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
 
-  /* Platform tabs */
-  .platform-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 6px;
-    box-shadow: var(--shadow);
-  }
-  .tab-btn {
-    flex: 1;
-    padding: 9px 16px;
-    border: none;
-    border-radius: 8px;
-    font-size: .95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all .2s;
-    background: transparent;
-    color: var(--muted);
-  }
-  .tab-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(59,91,219,.3); }
-  .tab-btn:not(.active):hover { background: var(--accent-light); color: var(--accent); }
+/* Metric inputs */
+.metric-input-wrap { position: relative; }
+.metric-input-wrap .unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .9rem; pointer-events: none; }
+.metric-input-wrap input { padding-right: 36px; }
 
-  /* Cards */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: var(--shadow);
-    margin-bottom: 20px;
-  }
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .card-title {
-    font-size: .8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--muted);
-  }
+/* Buttons */
+.btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-sm { padding: 6px 12px; font-size: .8rem; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+.btn-ghost:hover { background: #f1f5f9; color: var(--text); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #3451c7; }
+.btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { background: #2f855a; }
+.btn-success:disabled { background: #a0aec0; cursor: not-allowed; }
+.btn-danger { background: transparent; color: var(--red); border: 1.5px solid var(--red-border); }
+.btn-danger:hover { background: var(--red-bg); }
 
-  /* Fields */
-  .selector-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .selector-row-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
-  @media (max-width: 560px) {
-    .selector-row, .selector-row-3 { grid-template-columns: 1fr; }
-  }
+/* Result cards */
+.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 480px) { .results-grid { grid-template-columns: 1fr; } }
+.result-card { border-radius: var(--radius); border: 2px solid var(--border); padding: 20px; }
+.result-card.red    { background: var(--red-bg);    border-color: var(--red-border); }
+.result-card.yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
+.result-card.green  { background: var(--green-bg);  border-color: var(--green-border); }
+.result-card.empty  { background: #f8f9fa; border-color: #e9ecef; opacity: .6; }
+.result-metric-name { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+.stoplight { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.stoplight-dot { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.dot-red { background: #e53e3e; } .dot-yellow { background: #ecc94b; } .dot-green { background: #48bb78; } .dot-gray { background: #a0aec0; }
+.stoplight-label { font-size: 1.05rem; font-weight: 700; }
+.label-red { color: var(--red); } .label-yellow { color: var(--yellow); } .label-green { color: var(--green); } .label-gray { color: var(--muted); }
+.result-ranges { font-size: .82rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
+.range-row { display: flex; justify-content: space-between; gap: 8px; }
+.range-label { font-weight: 600; } .range-value { font-family: 'SF Mono','Fira Code',monospace; }
 
-  .field label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
-  .field input, .field select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
-    color: var(--text);
-    background: #fff;
-    appearance: none;
-    outline: none;
-    transition: border-color .15s;
-  }
-  .field input:focus, .field select:focus { border-color: var(--accent); }
-  .field select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
-  }
+/* Badges */
+.reliability-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .75rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+.rel-high     { background: #c6f6d5; color: #276749; }
+.rel-moderate { background: #bee3f8; color: #2a4365; }
+.rel-caution  { background: #fefcbf; color: #744210; }
+.rel-weak     { background: #fed7d7; color: #822727; }
+.rel-limited  { background: #feebc8; color: #7b341e; }
+.rel-nodata   { background: #e2e8f0; color: #4a5568; }
+.status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.pill-red    { background: var(--red-border);    color: var(--red); }
+.pill-yellow { background: var(--yellow-border); color: var(--yellow); }
+.pill-green  { background: var(--green-border);  color: var(--green); }
+.pill-gray   { background: #e2e8f0; color: #4a5568; }
 
-  /* Metric inputs */
-  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 480px) { .metrics-grid { grid-template-columns: 1fr; } }
-  .metric-input-wrap { position: relative; }
-  .metric-input-wrap .unit {
-    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-    color: var(--muted); font-size: .9rem; pointer-events: none;
-  }
-  .metric-input-wrap input { padding-right: 36px; }
+/* Gauge */
+.gauge-wrap { margin-bottom: 12px; }
+.gauge-bar { height: 8px; border-radius: 4px; position: relative; overflow: visible; }
+.gauge-marker { position: absolute; top: -4px; width: 16px; height: 16px; background: #1a202c; border: 2px solid #fff; border-radius: 50%; transform: translateX(-50%); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
 
-  /* Buttons */
-  .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: .9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .btn-ghost {
-    background: transparent;
-    color: var(--muted);
-    border: 1.5px solid var(--border);
-  }
-  .btn-ghost:hover { background: #f1f5f9; color: var(--text); }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: #3451c7; }
-  .btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
-  .btn-success { background: var(--green); color: #fff; }
-  .btn-success:hover { background: #2f855a; }
+/* Data note */
+.data-note { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 14px 18px; font-size: .83rem; color: var(--muted); margin-bottom: 20px; }
+.data-note strong { color: var(--text); }
 
-  /* Results */
-  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 480px) { .results-grid { grid-template-columns: 1fr; } }
+/* Save bar */
+.save-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); margin-top: 20px; flex-wrap: wrap; }
+.save-bar-msg { font-size: .85rem; color: var(--muted); }
+.save-bar-msg strong { color: var(--text); }
 
-  .result-card {
-    border-radius: var(--radius);
-    border: 2px solid var(--border);
-    padding: 20px;
-  }
-  .result-card.red    { background: var(--red-bg);    border-color: var(--red-border); }
-  .result-card.yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
-  .result-card.green  { background: var(--green-bg);  border-color: var(--green-border); }
-  .result-card.empty  { background: #f8f9fa; border-color: #e9ecef; opacity: .6; }
+/* Tables */
+.data-table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+.data-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: #f8fafc; }
+.table-wrap { overflow-x: auto; }
 
-  .result-metric-name {
-    font-size: .8rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .06em; color: var(--muted); margin-bottom: 10px;
-  }
-  .stoplight { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .stoplight-dot { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-  .dot-red    { background: #e53e3e; }
-  .dot-yellow { background: #ecc94b; }
-  .dot-green  { background: #48bb78; }
-  .dot-gray   { background: #a0aec0; }
-  .stoplight-label { font-size: 1.05rem; font-weight: 700; }
-  .label-red    { color: var(--red); }
-  .label-yellow { color: var(--yellow); }
-  .label-green  { color: var(--green); }
-  .label-gray   { color: var(--muted); }
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px 24px;
+  text-align: center; cursor: pointer; transition: all .2s; background: #fafbfc;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-light); }
+.upload-zone input[type=file] { display: none; }
+.upload-zone-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.upload-zone p { color: var(--muted); font-size: .9rem; margin-top: 6px; }
+.upload-zone strong { color: var(--text); }
 
-  .result-ranges { font-size: .82rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
-  .range-row { display: flex; justify-content: space-between; gap: 8px; }
-  .range-label { font-weight: 600; }
-  .range-value { font-family: 'SF Mono', 'Fira Code', monospace; }
+/* Bulk preview */
+.preview-row-red    td { background: #fff5f5 !important; }
+.preview-row-yellow td { background: #fffff0 !important; }
+.preview-row-green  td { background: #f0fff4 !important; }
+.cell-red    { color: var(--red);    font-weight: 700; }
+.cell-yellow { color: var(--yellow); font-weight: 700; }
+.cell-green  { color: var(--green);  font-weight: 700; }
+.cell-nodata { color: #a0aec0; font-style: italic; font-size: .8rem; }
 
-  .reliability-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: .75rem; font-weight: 600; padding: 4px 10px; border-radius: 20px;
-  }
-  .rel-high     { background: #c6f6d5; color: #276749; }
-  .rel-moderate { background: #bee3f8; color: #2a4365; }
-  .rel-caution  { background: #fefcbf; color: #744210; }
-  .rel-weak     { background: #fed7d7; color: #822727; }
-  .rel-limited  { background: #feebc8; color: #7b341e; }
-  .rel-nodata   { background: #e2e8f0; color: #4a5568; }
+/* Warn banner */
+.warn-banner { background: #fffbeb; border: 1.5px solid #f6e05e; border-radius: 8px; padding: 12px 16px; font-size: .83rem; color: #92400e; margin-bottom: 16px; }
+.warn-banner strong { color: #744210; }
 
-  /* Gauge */
-  .gauge-wrap { margin-bottom: 12px; }
-  .gauge-bar { height: 8px; border-radius: 4px; position: relative; overflow: visible; }
-  .gauge-marker {
-    position: absolute; top: -4px; width: 16px; height: 16px;
-    background: #1a202c; border: 2px solid #fff; border-radius: 50%;
-    transform: translateX(-50%); box-shadow: 0 1px 4px rgba(0,0,0,.3); transition: left .3s;
-  }
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a202c; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: .9rem; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,.3); opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.toast.error { background: var(--red); }
+.toast.success { background: var(--green); }
 
-  /* Data note */
-  .data-note {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 14px 18px;
-    font-size: .83rem;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-  .data-note strong { color: var(--text); }
-
-  /* Save bar */
-  .save-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    box-shadow: var(--shadow);
-    margin-top: 20px;
-    flex-wrap: wrap;
-  }
-  .save-bar-msg { font-size: .85rem; color: var(--muted); }
-  .save-bar-msg strong { color: var(--text); }
-
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: #1a202c; color: #fff;
-    padding: 12px 24px; border-radius: 8px; font-size: .9rem; font-weight: 500;
-    box-shadow: 0 4px 20px rgba(0,0,0,.3);
-    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999;
-    white-space: nowrap;
-  }
-  .toast.show { opacity: 1; }
-  .toast.error { background: var(--red); }
-  .toast.success { background: var(--green); }
-
-  /* History */
-  .history-search { display: flex; gap: 12px; align-items: flex-end; }
-  .history-search .field { flex: 1; }
-  .history-search .btn { height: 44px; }
-
-  .history-results { margin-top: 24px; }
-  .history-client-header {
-    font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;
-    padding-bottom: 10px; border-bottom: 2px solid var(--border);
-  }
-
-  .history-metric-block { margin-bottom: 28px; }
-  .history-metric-title {
-    font-size: .8rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .06em; color: var(--muted); margin-bottom: 10px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .history-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-  .history-table th {
-    text-align: left; padding: 8px 12px;
-    border-bottom: 2px solid var(--border);
-    color: var(--muted); font-weight: 600; font-size: .8rem;
-    text-transform: uppercase; letter-spacing: .05em;
-  }
-  .history-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  .history-table tr:last-child td { border-bottom: none; }
-  .history-table tr:hover td { background: #f8fafc; }
-
-  .status-pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 20px;
-  }
-  .pill-red    { background: var(--red-border);    color: var(--red); }
-  .pill-yellow { background: var(--yellow-border); color: var(--yellow); }
-  .pill-green  { background: var(--green-border);  color: var(--green); }
-
-  .trend { font-size: 1rem; }
-
-  /* Misc */
-  .hidden { display: none !important; }
-  .prompt-msg {
-    text-align: center; padding: 32px; color: var(--muted); font-size: .9rem;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); box-shadow: var(--shadow);
-  }
-  .info-section { margin-top: 32px; }
-  .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
-  .info-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; font-size: .83rem; color: var(--muted); }
-  .info-card strong { display: block; font-size: .9rem; color: var(--text); margin-bottom: 4px; }
-
-  .setup-banner {
-    background: #fffbeb; border: 2px solid #f6e05e; border-radius: var(--radius);
-    padding: 20px 24px; margin-bottom: 20px;
-  }
-  .setup-banner h3 { font-size: 1rem; margin-bottom: 8px; color: #744210; }
-  .setup-banner p { font-size: .85rem; color: #92400e; line-height: 1.6; }
-  .setup-banner code {
-    background: #fef9c3; padding: 2px 6px; border-radius: 4px;
-    font-family: 'SF Mono', 'Fira Code', monospace; font-size: .82rem;
-  }
-  .setup-banner ol { padding-left: 20px; margin-top: 8px; }
-  .setup-banner li { margin-top: 6px; font-size: .85rem; color: #92400e; }
+/* Misc */
+.hidden { display: none !important; }
+.prompt-msg { text-align: center; padding: 32px; color: var(--muted); font-size: .9rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.info-section { margin-top: 32px; }
+.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+.info-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; font-size: .83rem; color: var(--muted); }
+.info-card strong { display: block; font-size: .9rem; color: var(--text); margin-bottom: 4px; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+.tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
     <h1>Minimal Acceptable Standards</h1>
-    <p>Evaluate account performance against benchmarks and track client history over time</p>
+    <p>Evaluate performance, upload bulk data, and track client history over time</p>
   </div>
 
   <!-- Main nav -->
   <div class="main-nav">
     <button class="nav-btn active" onclick="setView('evaluate')">📊 Evaluate</button>
+    <button class="nav-btn" onclick="setView('bulk')">📤 Bulk Upload</button>
+    <button class="nav-btn" onclick="setView('profiles')">👥 Client Profiles</button>
     <button class="nav-btn" onclick="setView('history')">📈 Client History</button>
   </div>
 
-  <!-- ═══ EVALUATE VIEW ═══ -->
+  <!-- ══════════════════════════════════════════════════════════════
+       EVALUATE
+  ══════════════════════════════════════════════════════════════ -->
   <div id="viewEvaluate">
-
-    <!-- Platform tabs -->
     <div class="platform-tabs">
       <button class="tab-btn active" data-platform="GSA" onclick="setPlatform('GSA')">GSA — Google Search Ads</button>
       <button class="tab-btn" data-platform="LSA" onclick="setPlatform('LSA')">LSA — Local Services Ads</button>
     </div>
-
-    <!-- Data note -->
     <div id="dataNote" class="data-note"></div>
-
-    <!-- Account Details -->
     <div class="card">
       <div class="card-header">
         <span class="card-title">Account Details</span>
-        <button class="btn btn-ghost" onclick="clearAll()" style="font-size:.82rem;padding:6px 14px;">✕ Clear All</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearAll()">✕ Clear All</button>
       </div>
-      <div class="selector-row" style="margin-bottom:16px">
+      <div class="grid-2" style="margin-bottom:16px">
         <div class="field">
           <label for="clientName">Client Name</label>
-          <input type="text" id="clientName" placeholder="e.g. First Choice Automotive" oninput="updateSaveBar()" />
+          <input type="text" id="clientName" placeholder="e.g. First Choice Automotive" list="evalClientSuggestions" oninput="updateSaveBar()" />
+          <datalist id="evalClientSuggestions"></datalist>
         </div>
         <div class="field">
           <label for="reportMonth">Reporting Month</label>
           <input type="month" id="reportMonth" oninput="updateSaveBar()" />
         </div>
       </div>
-      <div class="selector-row">
+      <div class="grid-2">
         <div class="field">
           <label for="shopType">Shop Type</label>
           <select id="shopType" onchange="onShopTypeChange()">
@@ -397,27 +228,17 @@
         </div>
       </div>
     </div>
-
-    <!-- Metric Inputs -->
     <div id="metricsCard" class="card hidden">
-      <div class="card-header">
-        <span class="card-title">Enter Metric Values</span>
-      </div>
-      <div class="metrics-grid" id="metricsInputs"></div>
+      <div class="card-header"><span class="card-title">Enter Metric Values</span></div>
+      <div class="grid-2" id="metricsInputs"></div>
     </div>
-
-    <!-- Results -->
     <div id="resultsSection">
       <div class="prompt-msg">Select a shop type and service area above to see benchmarks.</div>
     </div>
-
-    <!-- Save bar -->
     <div id="saveBar" class="save-bar hidden">
       <div class="save-bar-msg" id="saveBarMsg"></div>
       <button class="btn btn-success" id="saveBtn" onclick="saveEntry()">💾 Save Entry</button>
     </div>
-
-    <!-- Legend -->
     <div class="info-section">
       <div class="info-grid">
         <div class="info-card"><strong>🔴 At Risk</strong>Performing below acceptable threshold. Requires optimization review and intervention.</div>
@@ -427,40 +248,109 @@
     </div>
   </div>
 
-  <!-- ═══ HISTORY VIEW ═══ -->
-  <div id="viewHistory" class="hidden">
-    <div id="setupBanner" class="setup-banner hidden">
-      <h3>⚙️ Supabase Setup Required</h3>
-      <p>To save and view client history, connect a free Supabase database:</p>
-      <ol>
-        <li>Create a free account at <strong>supabase.com</strong> → New project</li>
-        <li>Go to <strong>SQL Editor</strong> and run the setup script below</li>
-        <li>Go to <strong>Settings → API</strong> and copy your Project URL and anon key</li>
-        <li>Open <code>index.html</code> and replace <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> at the top of the script</li>
-      </ol>
-      <p style="margin-top:12px;font-weight:600;">SQL to run in Supabase:</p>
-      <pre style="background:#fef9c3;padding:12px;border-radius:8px;font-size:.78rem;margin-top:6px;overflow-x:auto;font-family:'SF Mono','Fira Code',monospace;line-height:1.6">create table metric_entries (
-  id uuid default gen_random_uuid() primary key,
-  created_at timestamptz default now(),
-  client_name text not null,
-  report_month text not null,
-  platform text not null,
-  shop_type text not null,
-  service_area text not null,
-  metric text not null,
-  value numeric not null,
-  status text not null,
-  reliability text
-);
--- Allow all team members to read/write (adjust if you want row-level security)
-alter table metric_entries enable row level security;
-create policy "allow_all" on metric_entries for all using (true) with check (true);</pre>
+  <!-- ══════════════════════════════════════════════════════════════
+       BULK UPLOAD
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="viewBulk" class="hidden">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Upload Settings</span></div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Platform</label>
+          <select id="bulkPlatform" onchange="onBulkPlatformChange()">
+            <option value="GSA">GSA — Google Search Ads</option>
+            <option value="LSA">LSA — Local Services Ads</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Reporting Month</label>
+          <input type="month" id="bulkMonth" />
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <div style="font-size:.8rem;color:var(--muted);line-height:1.5;padding-bottom:2px;">
+            Clients are matched to their profiles by name.<br>
+            <span id="bulkMetricHint" style="font-weight:600;color:var(--text)"></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px">Look Up Client History</div>
-      <div class="history-search">
+      <div class="card-header"><span class="card-title">Excel File</span></div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="event.preventDefault();this.classList.remove('drag');handleFileDrop(event)">
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" />
+        <div class="upload-zone-icon">📂</div>
+        <strong>Click to upload or drag & drop</strong>
+        <p>Supports .xlsx, .xls, .csv</p>
+        <p id="uploadFileName" style="margin-top:8px;color:var(--accent);font-weight:600"></p>
+      </div>
+      <div style="margin-top:16px;font-size:.82rem;color:var(--muted)">
+        <strong style="color:var(--text)">Expected columns</strong> (column names are flexible — the app will auto-detect):
+        <span id="expectedCols"></span>
+      </div>
+    </div>
+
+    <div id="bulkPreviewSection"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CLIENT PROFILES
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="viewProfiles" class="hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Add New Profile</span>
+      </div>
+      <div class="grid-4" style="margin-bottom:16px">
         <div class="field">
+          <label>Client Name</label>
+          <input type="text" id="profileName" placeholder="e.g. First Choice Automotive" />
+        </div>
+        <div class="field">
+          <label>Platform</label>
+          <select id="profilePlatform" onchange="renderProfileShopTypes()">
+            <option value="GSA">GSA</option>
+            <option value="LSA">LSA</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Shop Type</label>
+          <select id="profileShopType" onchange="renderProfileServiceAreas()">
+            <option value="">— Select —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Service Area</label>
+          <select id="profileServiceArea">
+            <option value="">— Select shop type —</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()">+ Add Profile</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Client Profiles</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadProfiles()">↻ Refresh</button>
+      </div>
+      <div id="profilesTable">
+        <div class="prompt-msg">Loading profiles…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       HISTORY
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="viewHistory" class="hidden">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Look Up Client History</span></div>
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="field" style="flex:1">
           <label for="historyClient">Client Name</label>
           <input type="text" id="historyClient" placeholder="e.g. First Choice Automotive" list="clientSuggestions" />
           <datalist id="clientSuggestions"></datalist>
@@ -468,95 +358,86 @@ create policy "allow_all" on metric_entries for all using (true) with check (tru
         <button class="btn btn-primary" onclick="loadHistory()">Search</button>
       </div>
     </div>
-
     <div id="historyResults"></div>
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
-// Replace these two values with your own from supabase.com → Settings → API
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
 const SUPABASE_URL      = "https://kdxocugyrmvlnnlpspoy.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_xc-FNmgp6NBL_TdEVW3gUA_DMbjVJh7";
-
-const supabaseReady = SUPABASE_URL !== "YOUR_SUPABASE_URL" && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY";
+const supabaseReady = SUPABASE_URL !== "YOUR_SUPABASE_URL";
 const db = supabaseReady ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // ─── BENCHMARK DATA ───────────────────────────────────────────────────────────
 const BENCHMARKS = [
-  // GSA — Diesel — CPL
+  // GSA — Diesel
   {p:"GSA",s:"Diesel",m:"CPL",a:"Metro",    d:"lower_better", pct:false, low:254.7, high:254.7, r:"Weak / Directional Only"},
   {p:"GSA",s:"Diesel",m:"CPL",a:"Suburban", d:"lower_better", pct:false, low:220.8, high:220.8, r:"Weak / Directional Only"},
   {p:"GSA",s:"Diesel",m:"CPL",a:"Rural",    d:"lower_better", pct:false, low:50.1,  high:67.2,  r:"More Reliable"},
-  {p:"GSA",s:"Diesel",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:6.1,  high:6.4,  r:"Weak / Directional Only"},
-  {p:"GSA",s:"Diesel",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:6.9,  high:6.9,  r:"Weak / Directional Only"},
-  {p:"GSA",s:"Diesel",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:3.4,  high:5.8,  r:"More Reliable"},
-  {p:"GSA",s:"Diesel",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:2.7, high:4.1, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Diesel",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:1.6, high:1.6, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Diesel",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:2.2, high:3.5, r:"More Reliable"},
-  {p:"GSA",s:"Diesel",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:2.5, high:2.5, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Diesel",m:"CR", a:"Suburban", d:"higher_better", pct:true, low:3.1, high:3.1, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Diesel",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:5.1, high:6.6, r:"Use With Caution"},
-
+  {p:"GSA",s:"Diesel",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:6.1,   high:6.4,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Diesel",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:6.9,   high:6.9,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Diesel",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:3.4,   high:5.8,   r:"More Reliable"},
+  {p:"GSA",s:"Diesel",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:2.7,  high:4.1,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Diesel",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:1.6,  high:1.6,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Diesel",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:2.2,  high:3.5,   r:"More Reliable"},
+  {p:"GSA",s:"Diesel",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:2.5,  high:2.5,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Diesel",m:"CR", a:"Suburban", d:"higher_better", pct:true, low:3.1,  high:3.1,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Diesel",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:5.1,  high:6.6,   r:"Use With Caution"},
   // GSA — European
   {p:"GSA",s:"European",m:"CPL",a:"Metro",    d:"lower_better", pct:false, low:312.5, high:489.8, r:"Moderate"},
   {p:"GSA",s:"European",m:"CPL",a:"Suburban", d:"lower_better", pct:false, low:139.2, high:380.2, r:"Moderate"},
   {p:"GSA",s:"European",m:"CPL",a:"Rural",    d:"lower_better", pct:false, low:398.5, high:508.7, r:"Limited"},
-  {p:"GSA",s:"European",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:3.8, high:8.6, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:3.1, high:3.9, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:5.0, high:9.1, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:1.6, high:2.7, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:1.4, high:2.8, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:1.5, high:2.1, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.5, high:2.8, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CR", a:"Suburban", d:"higher_better", pct:true, low:0.9, high:1.9, r:"Use With Caution"},
-  {p:"GSA",s:"European",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:1.2, high:1.2, r:"Use With Caution"},
-
+  {p:"GSA",s:"European",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:3.8,   high:8.6,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:3.1,   high:3.9,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:5.0,   high:9.1,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:1.6,  high:2.7,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:1.4,  high:2.8,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:1.5,  high:2.1,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.5,  high:2.8,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CR", a:"Suburban", d:"higher_better", pct:true, low:0.9,  high:1.9,   r:"Use With Caution"},
+  {p:"GSA",s:"European",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:1.2,  high:1.2,   r:"Use With Caution"},
   // GSA — General
   {p:"GSA",s:"General",m:"CPL",a:"Metro",    d:"lower_better", pct:false, low:84.9,  high:207.5, r:"High"},
   {p:"GSA",s:"General",m:"CPL",a:"Suburban", d:"lower_better", pct:false, low:131.8, high:210.0, r:"Moderate"},
   {p:"GSA",s:"General",m:"CPL",a:"Rural",    d:"lower_better", pct:false, low:82.2,  high:171.2, r:"High"},
-  {p:"GSA",s:"General",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:3.4, high:5.9, r:"More Reliable"},
-  {p:"GSA",s:"General",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:2.7, high:6.0, r:"Use With Caution"},
-  {p:"GSA",s:"General",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:3.5, high:6.5, r:"More Reliable"},
-  {p:"GSA",s:"General",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:2.1, high:3.3, r:"More Reliable"},
-  {p:"GSA",s:"General",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:2.3, high:3.7, r:"Use With Caution"},
-  {p:"GSA",s:"General",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:2.1, high:4.5, r:"More Reliable"},
-  {p:"GSA",s:"General",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.7, high:5.8, r:"More Reliable"},
-  {p:"GSA",s:"General",m:"CR", a:"Suburban", d:"higher_better", pct:true, low:3.1, high:4.5, r:"Use With Caution"},
-  {p:"GSA",s:"General",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:2.7, high:5.8, r:"More Reliable"},
-
+  {p:"GSA",s:"General",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:3.4,   high:5.9,   r:"More Reliable"},
+  {p:"GSA",s:"General",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:2.7,   high:6.0,   r:"Use With Caution"},
+  {p:"GSA",s:"General",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:3.5,   high:6.5,   r:"More Reliable"},
+  {p:"GSA",s:"General",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:2.1,  high:3.3,   r:"More Reliable"},
+  {p:"GSA",s:"General",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:2.3,  high:3.7,   r:"Use With Caution"},
+  {p:"GSA",s:"General",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:2.1,  high:4.5,   r:"More Reliable"},
+  {p:"GSA",s:"General",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.7,  high:5.8,   r:"More Reliable"},
+  {p:"GSA",s:"General",m:"CR", a:"Suburban", d:"higher_better", pct:true, low:3.1,  high:4.5,   r:"Use With Caution"},
+  {p:"GSA",s:"General",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:2.7,  high:5.8,   r:"More Reliable"},
   // GSA — Off-Road
   {p:"GSA",s:"Off-Road",m:"CPL",a:"Metro",    noData:true},
   {p:"GSA",s:"Off-Road",m:"CPL",a:"Suburban", noData:true},
   {p:"GSA",s:"Off-Road",m:"CPL",a:"Rural",    d:"lower_better", pct:false, low:132.1, high:132.1, r:"Weak / Directional Only"},
   {p:"GSA",s:"Off-Road",m:"CPC",a:"Metro",    noData:true},
-  {p:"GSA",s:"Off-Road",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:4.8, high:4.8, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Off-Road",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:5.8, high:6.8, r:"Use With Caution"},
+  {p:"GSA",s:"Off-Road",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:4.8,   high:4.8,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Off-Road",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:5.8,   high:6.8,   r:"Use With Caution"},
   {p:"GSA",s:"Off-Road",m:"CTR",a:"Metro",    noData:true},
-  {p:"GSA",s:"Off-Road",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:5.8, high:5.8, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Off-Road",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:3.2, high:4.4, r:"Use With Caution"},
+  {p:"GSA",s:"Off-Road",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:5.8,  high:5.8,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Off-Road",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:3.2,  high:4.4,   r:"Use With Caution"},
   {p:"GSA",s:"Off-Road",m:"CR", a:"Metro",    noData:true},
   {p:"GSA",s:"Off-Road",m:"CR", a:"Suburban", noData:true},
-  {p:"GSA",s:"Off-Road",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:4.0, high:4.0, r:"Weak / Directional Only"},
-
+  {p:"GSA",s:"Off-Road",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:4.0,  high:4.0,   r:"Weak / Directional Only"},
   // GSA — Specialty
   {p:"GSA",s:"Specialty",m:"CPL",a:"Metro",    d:"lower_better", pct:false, low:173.2, high:363.0, r:"Limited"},
   {p:"GSA",s:"Specialty",m:"CPL",a:"Suburban", noData:true},
   {p:"GSA",s:"Specialty",m:"CPL",a:"Rural",    d:"lower_better", pct:false, low:549.2, high:810.2, r:"Moderate"},
-  {p:"GSA",s:"Specialty",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:3.2, high:3.6, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Specialty",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:4.8, high:4.8, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Specialty",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:4.4, high:6.3, r:"Use With Caution"},
-  {p:"GSA",s:"Specialty",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:1.5, high:2.2, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Specialty",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:5.8, high:5.8, r:"Weak / Directional Only"},
-  {p:"GSA",s:"Specialty",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:2.5, high:4.0, r:"Use With Caution"},
-  {p:"GSA",s:"Specialty",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.6, high:3.0, r:"Weak / Directional Only"},
+  {p:"GSA",s:"Specialty",m:"CPC",a:"Metro",    d:"lower_better", pct:false, low:3.2,   high:3.6,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Specialty",m:"CPC",a:"Suburban", d:"lower_better", pct:false, low:4.8,   high:4.8,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Specialty",m:"CPC",a:"Rural",    d:"lower_better", pct:false, low:4.4,   high:6.3,   r:"Use With Caution"},
+  {p:"GSA",s:"Specialty",m:"CTR",a:"Metro",    d:"higher_better", pct:true, low:1.5,  high:2.2,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Specialty",m:"CTR",a:"Suburban", d:"higher_better", pct:true, low:5.8,  high:5.8,   r:"Weak / Directional Only"},
+  {p:"GSA",s:"Specialty",m:"CTR",a:"Rural",    d:"higher_better", pct:true, low:2.5,  high:4.0,   r:"Use With Caution"},
+  {p:"GSA",s:"Specialty",m:"CR", a:"Metro",    d:"higher_better", pct:true, low:1.6,  high:3.0,   r:"Weak / Directional Only"},
   {p:"GSA",s:"Specialty",m:"CR", a:"Suburban", noData:true},
-  {p:"GSA",s:"Specialty",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:0.7, high:1.2, r:"Use With Caution"},
-
+  {p:"GSA",s:"Specialty",m:"CR", a:"Rural",    d:"higher_better", pct:true, low:0.7,  high:1.2,   r:"Use With Caution"},
   // LSA — General
   {p:"LSA",s:"General",m:"CPL",a:"Metro",    d:"lower_better", pct:false, low:17.4, high:24.0, r:"More Reliable"},
   {p:"LSA",s:"General",m:"CPL",a:"Suburban", d:"lower_better", pct:false, low:16.3, high:23.0, r:"Use With Caution"},
@@ -566,25 +447,37 @@ const BENCHMARKS = [
   {p:"LSA",s:"General",m:"Lead Quality Rate",a:"Rural",    d:"higher_better", pct:true, low:67.7, high:81.6, r:"More Reliable"},
 ];
 
+// Metrics expected per platform for bulk upload column detection
+const PLATFORM_METRICS = {
+  GSA: ["CPL","CPC","CTR","CR"],
+  LSA: ["CPL","Lead Quality Rate"],
+};
+
+// Column name synonyms for auto-detection
+const COL_ALIASES = {
+  clientName: ["client name","client","account name","account","name","campaign name"],
+  CPL:  ["cpl","cost per lead","cost per qualified lead","cost/conv","cost / conv","cost per conversion"],
+  CPC:  ["cpc","cost per click","avg. cpc","avg cpc"],
+  CTR:  ["ctr","click-through rate","click through rate","clickthrough rate"],
+  CR:   ["cr","conversion rate","conv. rate","conv rate","conversions rate"],
+  "Lead Quality Rate": ["lead quality rate","lead quality","quality rate","lqr"],
+};
+
 const PLATFORM_NOTES = {
   GSA: "<strong>Data source:</strong> GSA benchmarks are based on <strong>12 months</strong> of real client performance data, segmented by shop type and service area. These are operational guidelines, not hard rules — always consider account-level context such as budget, competition, population density, and seasonality.",
-  LSA: "<strong>Data source:</strong> LSA benchmarks are based on <strong>6 months</strong> of real client performance data. LSA is tracked for General shop type only. Use with awareness that sample sizes are smaller than GSA due to shorter history and data access limitations when clients off-board.",
+  LSA: "<strong>Data source:</strong> LSA benchmarks are based on <strong>6 months</strong> of real client performance data. LSA is tracked for General shop type only. Use with awareness that sample sizes are smaller due to shorter history and data access limitations when clients off-board.",
 };
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-let state = { platform: "GSA", shopType: "", serviceArea: "" };
-let currentView = "evaluate";
+let appState = { platform: "GSA", shopType: "", serviceArea: "" };
+let bulkParsedRows = [];  // parsed Excel rows awaiting save
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-function getShopTypes(platform) {
-  return [...new Set(BENCHMARKS.filter(b => b.p === platform).map(b => b.s))];
-}
-function getServiceAreas(platform, shopType) {
-  return [...new Set(BENCHMARKS.filter(b => b.p === platform && b.s === shopType).map(b => b.a))];
-}
-function getMetrics(platform, shopType, serviceArea) {
-  return BENCHMARKS.filter(b => b.p === platform && b.s === shopType && b.a === serviceArea);
-}
+const getShopTypes    = p        => [...new Set(BENCHMARKS.filter(b => b.p===p).map(b=>b.s))];
+const getServiceAreas = (p,s)    => [...new Set(BENCHMARKS.filter(b => b.p===p && b.s===s).map(b=>b.a))];
+const getMetrics      = (p,s,a)  => BENCHMARKS.filter(b => b.p===p && b.s===s && b.a===a);
+const getBench        = (p,s,a,m)=> BENCHMARKS.find(b => b.p===p && b.s===s && b.a===a && b.m===m);
+
 function classify(value, bench) {
   if (bench.d === "lower_better") {
     if (value > bench.high) return "red";
@@ -596,70 +489,69 @@ function classify(value, bench) {
     return "green";
   }
 }
+
 function reliabilityClass(r) {
   if (r === "High" || r === "More Reliable") return "rel-high";
   if (r === "Moderate") return "rel-moderate";
   if (r === "Use With Caution") return "rel-caution";
   if (r === "Limited") return "rel-limited";
-  if (r === "Weak / Directional Only") return "rel-weak";
-  return "rel-nodata";
+  return "rel-weak";
 }
+
 function fmt(val, pct) {
   if (pct) return val.toFixed(1) + "%";
   return "$" + val.toFixed(2).replace(/\.00$/, "");
 }
+
 function fmtRange(bench) {
-  if (bench.low === bench.high) return null;
+  if (!bench || bench.low === bench.high) return null;
   return fmt(bench.low, bench.pct) + " – " + fmt(bench.high, bench.pct);
 }
+
 function fmtMonth(m) {
   if (!m) return "";
   const [y, mo] = m.split("-");
   return new Date(y, mo - 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
+
 function showToast(msg, type = "") {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.className = "toast show" + (type ? " " + type : "");
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.className = "toast"; }, 3000);
+  t._timer = setTimeout(() => { t.className = "toast"; }, 3500);
 }
 
-// ─── GAUGE ────────────────────────────────────────────────────────────────────
-function buildGauge(value, bench) {
-  const minVal = bench.low * 0.3;
-  const maxVal = bench.high * 1.8;
-  const range = maxVal - minVal;
-  const redPct  = ((bench.low  - minVal) / range * 100).toFixed(1);
-  const greenPct = ((bench.high - minVal) / range * 100).toFixed(1);
-  let markerPct = Math.max(2, Math.min(98, (value - minVal) / range * 100));
-  if (bench.d === "lower_better") {
-    return `<div class="gauge-wrap"><div class="gauge-bar" style="background:linear-gradient(to right,#48bb78 0%,#48bb78 ${redPct}%,#ecc94b ${redPct}%,#ecc94b ${greenPct}%,#e53e3e ${greenPct}%,#e53e3e 100%)"><div class="gauge-marker" style="left:${markerPct}%"></div></div></div>`;
-  } else {
-    return `<div class="gauge-wrap"><div class="gauge-bar" style="background:linear-gradient(to right,#e53e3e 0%,#e53e3e ${redPct}%,#ecc94b ${redPct}%,#ecc94b ${greenPct}%,#48bb78 ${greenPct}%,#48bb78 100%)"><div class="gauge-marker" style="left:${markerPct}%"></div></div></div>`;
-  }
+// Parse a raw cell value to a number, stripping $, %, commas
+function parseMetricValue(raw, isPercent) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const str = String(raw).replace(/[$,%\s]/g, "").replace(/,/g, "");
+  let n = parseFloat(str);
+  if (isNaN(n)) return null;
+  // If it's a percent metric and value looks like a decimal (e.g. 0.025 → 2.5%)
+  if (isPercent && n < 1 && n > 0) n = n * 100;
+  return n;
 }
 
 // ─── VIEW SWITCHING ───────────────────────────────────────────────────────────
+const VIEWS = ["Evaluate","Bulk","Profiles","History"];
 function setView(view) {
-  currentView = view;
-  document.getElementById("viewEvaluate").classList.toggle("hidden", view !== "evaluate");
-  document.getElementById("viewHistory").classList.toggle("hidden", view !== "history");
-  document.querySelectorAll(".nav-btn").forEach((b, i) => {
-    b.classList.toggle("active", (i === 0 && view === "evaluate") || (i === 1 && view === "history"));
+  VIEWS.forEach(v => {
+    document.getElementById("view"+v).classList.toggle("hidden", v.toLowerCase() !== view);
   });
-  if (view === "history") {
-    document.getElementById("setupBanner").classList.toggle("hidden", supabaseReady);
-    if (supabaseReady) loadClientSuggestions();
-  }
+  document.querySelectorAll(".nav-btn").forEach((b, i) => {
+    b.classList.toggle("active", b.textContent.toLowerCase().includes(view));
+  });
+  if (view === "profiles") loadProfiles();
+  if (view === "history")  loadClientSuggestions();
+  if (view === "bulk")     updateBulkHints();
+  if (view === "evaluate") loadEvalSuggestions();
 }
 
 // ─── EVALUATE ────────────────────────────────────────────────────────────────
 function setPlatform(platform) {
-  state = { platform, shopType: "", serviceArea: "" };
-  document.querySelectorAll(".tab-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.platform === platform);
-  });
+  appState = { platform, shopType: "", serviceArea: "" };
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.platform === platform));
   document.getElementById("dataNote").innerHTML = PLATFORM_NOTES[platform];
   renderShopTypes();
   renderServiceAreas();
@@ -670,40 +562,31 @@ function setPlatform(platform) {
 function renderShopTypes() {
   const sel = document.getElementById("shopType");
   sel.innerHTML = '<option value="">— Select shop type —</option>';
-  getShopTypes(state.platform).forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s; opt.textContent = s;
-    sel.appendChild(opt);
+  getShopTypes(appState.platform).forEach(s => {
+    const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
   });
 }
 
 function renderServiceAreas() {
   const sel = document.getElementById("serviceArea");
-  sel.innerHTML = '<option value="">— Select —</option>';
-  if (!state.shopType) return;
-  getServiceAreas(state.platform, state.shopType).forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a; opt.textContent = a;
-    sel.appendChild(opt);
+  sel.innerHTML = '<option value="">— Select shop type first —</option>';
+  if (!appState.shopType) return;
+  getServiceAreas(appState.platform, appState.shopType).forEach(a => {
+    const o = document.createElement("option"); o.value = a; o.textContent = a; sel.appendChild(o);
   });
 }
 
 function onShopTypeChange() {
-  state.shopType = document.getElementById("shopType").value;
-  state.serviceArea = "";
+  appState.shopType = document.getElementById("shopType").value;
+  appState.serviceArea = "";
   renderServiceAreas();
   hideMetrics();
   renderResults([]);
 }
 
 function onServiceAreaChange() {
-  state.serviceArea = document.getElementById("serviceArea").value;
-  if (state.serviceArea) {
-    renderMetricInputs();
-  } else {
-    hideMetrics();
-    renderResults([]);
-  }
+  appState.serviceArea = document.getElementById("serviceArea").value;
+  appState.serviceArea ? renderMetricInputs() : (hideMetrics(), renderResults([]));
 }
 
 function hideMetrics() {
@@ -716,47 +599,40 @@ function clearAll() {
   document.getElementById("clientName").value = "";
   document.getElementById("reportMonth").value = "";
   document.getElementById("shopType").value = "";
-  document.getElementById("serviceArea").innerHTML = '<option value="">— Select —</option>';
-  state.shopType = "";
-  state.serviceArea = "";
-  hideMetrics();
-  renderResults([]);
+  document.getElementById("serviceArea").innerHTML = '<option value="">— Select shop type first —</option>';
+  appState.shopType = ""; appState.serviceArea = "";
+  hideMetrics(); renderResults([]);
 }
 
 function renderMetricInputs() {
-  const benchmarks = getMetrics(state.platform, state.shopType, state.serviceArea);
-  const card = document.getElementById("metricsCard");
+  const benchmarks = getMetrics(appState.platform, appState.shopType, appState.serviceArea);
   const grid = document.getElementById("metricsInputs");
   grid.innerHTML = "";
   benchmarks.forEach(bench => {
-    const div = document.createElement("div");
-    div.className = "field";
+    const div = document.createElement("div"); div.className = "field";
     if (bench.noData) {
       div.innerHTML = `<label>${bench.m}</label>
         <div style="padding:10px 14px;border:1.5px dashed var(--border);border-radius:8px;font-size:.83rem;color:var(--muted);font-style:italic;background:#f8f9fa;">Not enough data to provide an output</div>`;
     } else {
-      const unit = bench.pct ? "%" : "$";
       div.innerHTML = `<label>${bench.m}</label>
         <div class="metric-input-wrap">
-          <input type="number" min="0" step="any"
-            id="input-${bench.m.replace(/\s+/g,'-')}"
-            placeholder="${bench.pct ? 'e.g. 2.5' : 'e.g. 150'}"
-            oninput="onInputChange()" />
-          <span class="unit">${unit}</span>
+          <input type="number" min="0" step="any" id="input-${bench.m.replace(/\s+/g,'-')}"
+            placeholder="${bench.pct ? 'e.g. 2.5' : 'e.g. 150'}" oninput="onInputChange()" />
+          <span class="unit">${bench.pct ? '%' : '$'}</span>
         </div>`;
     }
     grid.appendChild(div);
   });
-  card.classList.remove("hidden");
+  document.getElementById("metricsCard").classList.remove("hidden");
   renderResults(benchmarks.map(b => ({ bench: b, value: null })));
   updateSaveBar();
 }
 
 function onInputChange() {
-  const benchmarks = getMetrics(state.platform, state.shopType, state.serviceArea);
+  const benchmarks = getMetrics(appState.platform, appState.shopType, appState.serviceArea);
   const results = benchmarks.map(bench => {
-    const input = document.getElementById("input-" + bench.m.replace(/\s+/g,"-"));
-    const val = input ? parseFloat(input.value) : NaN;
+    const el = document.getElementById("input-" + bench.m.replace(/\s+/g,"-"));
+    const val = el ? parseFloat(el.value) : NaN;
     return { bench, value: isNaN(val) ? null : val };
   });
   renderResults(results);
@@ -767,158 +643,386 @@ function updateSaveBar() {
   const bar = document.getElementById("saveBar");
   const msg = document.getElementById("saveBarMsg");
   const btn = document.getElementById("saveBtn");
-  if (!state.shopType || !state.serviceArea) { bar.classList.add("hidden"); return; }
+  if (!appState.shopType || !appState.serviceArea) { bar.classList.add("hidden"); return; }
   bar.classList.remove("hidden");
   const client = document.getElementById("clientName").value.trim();
   const month  = document.getElementById("reportMonth").value;
-  const hasValues = getMetrics(state.platform, state.shopType, state.serviceArea)
+  const hasValues = getMetrics(appState.platform, appState.shopType, appState.serviceArea)
     .filter(b => !b.noData)
-    .some(b => {
-      const el = document.getElementById("input-" + b.m.replace(/\s+/g,"-"));
-      return el && el.value !== "";
-    });
-  if (!supabaseReady) {
-    msg.innerHTML = `<span style="color:#744210">⚙️ Connect Supabase to enable saving (see Client History tab)</span>`;
-    btn.disabled = true;
-  } else if (!client) {
-    msg.innerHTML = `Enter a <strong>client name</strong> to save this entry`;
-    btn.disabled = true;
-  } else if (!month) {
-    msg.innerHTML = `Select a <strong>reporting month</strong> to save this entry`;
-    btn.disabled = true;
-  } else if (!hasValues) {
-    msg.innerHTML = `Enter at least one metric value to save`;
-    btn.disabled = true;
-  } else {
-    msg.innerHTML = `Save <strong>${client}</strong> — ${fmtMonth(month)}`;
-    btn.disabled = false;
-  }
+    .some(b => { const el = document.getElementById("input-" + b.m.replace(/\s+/g,"-")); return el && el.value !== ""; });
+  if (!client) { msg.innerHTML = `Enter a <strong>client name</strong> to save`; btn.disabled = true; }
+  else if (!month) { msg.innerHTML = `Select a <strong>reporting month</strong> to save`; btn.disabled = true; }
+  else if (!hasValues) { msg.innerHTML = `Enter at least one metric value to save`; btn.disabled = true; }
+  else { msg.innerHTML = `Save <strong>${client}</strong> — ${fmtMonth(month)}`; btn.disabled = false; }
 }
 
 async function saveEntry() {
   const client = document.getElementById("clientName").value.trim();
   const month  = document.getElementById("reportMonth").value;
-  const benchmarks = getMetrics(state.platform, state.shopType, state.serviceArea).filter(b => !b.noData);
+  const benchmarks = getMetrics(appState.platform, appState.shopType, appState.serviceArea).filter(b => !b.noData);
   const rows = [];
   benchmarks.forEach(bench => {
     const el = document.getElementById("input-" + bench.m.replace(/\s+/g,"-"));
     if (!el || el.value === "") return;
     const value = parseFloat(el.value);
-    rows.push({
-      client_name:  client,
-      report_month: month,
-      platform:     state.platform,
-      shop_type:    state.shopType,
-      service_area: state.serviceArea,
-      metric:       bench.m,
-      value,
-      status:       classify(value, bench),
-      reliability:  bench.r,
-    });
+    rows.push({ client_name: client, report_month: month, platform: appState.platform, shop_type: appState.shopType, service_area: appState.serviceArea, metric: bench.m, value, status: classify(value, bench), reliability: bench.r });
   });
   if (!rows.length) { showToast("No values to save", "error"); return; }
-  document.getElementById("saveBtn").disabled = true;
-  document.getElementById("saveBtn").textContent = "Saving…";
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true; btn.textContent = "Saving…";
   const { error } = await db.from("metric_entries").insert(rows);
-  document.getElementById("saveBtn").textContent = "💾 Save Entry";
-  document.getElementById("saveBtn").disabled = false;
-  if (error) {
-    showToast("Error saving: " + error.message, "error");
-  } else {
-    showToast(`✓ Saved ${rows.length} metric${rows.length > 1 ? "s" : ""} for ${client}`, "success");
-  }
+  btn.textContent = "💾 Save Entry"; btn.disabled = false;
+  error ? showToast("Error: " + error.message, "error") : showToast(`✓ Saved ${rows.length} metrics for ${client}`, "success");
 }
 
 function renderResults(results) {
   const section = document.getElementById("resultsSection");
-  const hasAnyNoData = results.some(r => r.bench.noData);
-  if (!results.length || (results.every(r => r.value === null) && !hasAnyNoData)) {
-    section.innerHTML = `<div class="prompt-msg">${!state.shopType || !state.serviceArea ? "Select a shop type and service area above to see benchmarks." : "Enter metric values above to see performance classifications."}</div>`;
+  const hasNoData = results.some(r => r.bench.noData);
+  if (!results.length || (results.every(r => r.value === null) && !hasNoData)) {
+    section.innerHTML = `<div class="prompt-msg">${!appState.shopType || !appState.serviceArea ? "Select a shop type and service area above to see benchmarks." : "Enter metric values above to see performance classifications."}</div>`;
     return;
   }
   const active = results.filter(r => r.bench.noData || r.value !== null);
-  if (!active.length) {
-    section.innerHTML = `<div class="prompt-msg">Enter metric values above to see performance classifications.</div>`;
-    return;
-  }
+  if (!active.length) { section.innerHTML = `<div class="prompt-msg">Enter metric values above to see performance classifications.</div>`; return; }
   const cards = active.map(({ bench, value }) => {
-    if (bench.noData) {
-      return `<div class="result-card empty">
-        <div class="result-metric-name">${bench.m}</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div class="stoplight-dot dot-gray"></div>
-          <div class="stoplight-label label-gray">No Data Available</div>
-        </div>
-        <p style="font-size:.82rem;color:var(--muted);font-style:italic;">Not enough data to provide a benchmark output for this shop type and service area combination.</p>
-      </div>`;
-    }
+    if (bench.noData) return `<div class="result-card empty">
+      <div class="result-metric-name">${bench.m}</div>
+      <div class="stoplight"><div class="stoplight-dot dot-gray"></div><div class="stoplight-label label-gray">No Data Available</div></div>
+      <p style="font-size:.82rem;color:var(--muted);font-style:italic;">Not enough data to provide a benchmark output for this combination.</p></div>`;
     const status = classify(value, bench);
     const hasYellow = bench.low < bench.high;
-    const dotClass  = { red:"dot-red", yellow:"dot-yellow", green:"dot-green" }[status];
-    const labelClass = { red:"label-red", yellow:"label-yellow", green:"label-green" }[status];
-    const labelText  = { red:"At Risk", yellow:"Healthy / Expected", green:"High Performing" }[status];
-    const emoji      = { red:"🔴", yellow:"🟡", green:"🟢" }[status];
-    const yellowRange = fmtRange(bench);
-    let rangesHtml = bench.d === "lower_better"
-      ? `<div class="range-row"><span class="range-label" style="color:var(--green)">🟢 High Performing</span><span class="range-value">&lt; ${fmt(bench.low,bench.pct)}</span></div>
-         ${hasYellow ? `<div class="range-row"><span class="range-label" style="color:var(--yellow)">🟡 Healthy</span><span class="range-value">${yellowRange}</span></div>` : ""}
-         <div class="range-row"><span class="range-label" style="color:var(--red)">🔴 At Risk</span><span class="range-value">&gt; ${fmt(bench.high,bench.pct)}</span></div>`
-      : `<div class="range-row"><span class="range-label" style="color:var(--red)">🔴 At Risk</span><span class="range-value">&lt; ${fmt(bench.low,bench.pct)}</span></div>
-         ${hasYellow ? `<div class="range-row"><span class="range-label" style="color:var(--yellow)">🟡 Healthy</span><span class="range-value">${yellowRange}</span></div>` : ""}
-         <div class="range-row"><span class="range-label" style="color:var(--green)">🟢 High Performing</span><span class="range-value">&gt; ${fmt(bench.high,bench.pct)}</span></div>`;
+    const dotClass  = {red:"dot-red",yellow:"dot-yellow",green:"dot-green"}[status];
+    const labelClass = {red:"label-red",yellow:"label-yellow",green:"label-green"}[status];
+    const labelText  = {red:"At Risk",yellow:"Healthy / Expected",green:"High Performing"}[status];
+    const emoji      = {red:"🔴",yellow:"🟡",green:"🟢"}[status];
+    const yr = fmtRange(bench);
+    const rangesHtml = bench.d === "lower_better"
+      ? `<div class="range-row"><span class="range-label" style="color:var(--green)">🟢 High Performing</span><span class="range-value">&lt; ${fmt(bench.low,bench.pct)}</span></div>${hasYellow?`<div class="range-row"><span class="range-label" style="color:var(--yellow)">🟡 Healthy</span><span class="range-value">${yr}</span></div>`:""}<div class="range-row"><span class="range-label" style="color:var(--red)">🔴 At Risk</span><span class="range-value">&gt; ${fmt(bench.high,bench.pct)}</span></div>`
+      : `<div class="range-row"><span class="range-label" style="color:var(--red)">🔴 At Risk</span><span class="range-value">&lt; ${fmt(bench.low,bench.pct)}</span></div>${hasYellow?`<div class="range-row"><span class="range-label" style="color:var(--yellow)">🟡 Healthy</span><span class="range-value">${yr}</span></div>`:""}<div class="range-row"><span class="range-label" style="color:var(--green)">🟢 High Performing</span><span class="range-value">&gt; ${fmt(bench.high,bench.pct)}</span></div>`;
+    const minV = bench.low * 0.3, maxV = bench.high * 1.8, rng = maxV - minV;
+    const rp = ((bench.low - minV)/rng*100).toFixed(1), gp = ((bench.high - minV)/rng*100).toFixed(1);
+    const mp = Math.max(2, Math.min(98, (value - minV)/rng*100));
+    const gauge = bench.d === "lower_better"
+      ? `<div class="gauge-wrap"><div class="gauge-bar" style="background:linear-gradient(to right,#48bb78 0%,#48bb78 ${rp}%,#ecc94b ${rp}%,#ecc94b ${gp}%,#e53e3e ${gp}%,#e53e3e 100%)"><div class="gauge-marker" style="left:${mp}%"></div></div></div>`
+      : `<div class="gauge-wrap"><div class="gauge-bar" style="background:linear-gradient(to right,#e53e3e 0%,#e53e3e ${rp}%,#ecc94b ${rp}%,#ecc94b ${gp}%,#48bb78 ${gp}%,#48bb78 100%)"><div class="gauge-marker" style="left:${mp}%"></div></div></div>`;
     return `<div class="result-card ${status}">
       <div class="result-metric-name">${bench.m}</div>
-      <div class="stoplight">
-        <div class="stoplight-dot ${dotClass}"></div>
-        <div>
-          <div class="stoplight-label ${labelClass}">${emoji} ${labelText}</div>
-          <div style="font-size:.82rem;color:var(--muted)">Your value: <strong>${fmt(value,bench.pct)}</strong></div>
-        </div>
-      </div>
-      ${buildGauge(value, bench)}
+      <div class="stoplight"><div class="stoplight-dot ${dotClass}"></div><div>
+        <div class="stoplight-label ${labelClass}">${emoji} ${labelText}</div>
+        <div style="font-size:.82rem;color:var(--muted)">Your value: <strong>${fmt(value,bench.pct)}</strong></div>
+      </div></div>
+      ${gauge}
       <div class="result-ranges">${rangesHtml}</div>
-      ${status === "red" ? `<div style="margin:12px 0 10px;padding:10px 12px;background:#fff5f5;border:1.5px solid #fed7d7;border-radius:8px;font-size:.8rem;color:#822727;line-height:1.5;">⚠️ <strong>Flag for ads team review.</strong> Escalate for a deeper evaluation — review targeting, bidding strategy, negatives, conversion tracking, and account-level context before drawing conclusions.</div>` : ""}
+      ${status==="red"?`<div style="margin:12px 0 10px;padding:10px 12px;background:#fff5f5;border:1.5px solid #fed7d7;border-radius:8px;font-size:.8rem;color:#822727;line-height:1.5;">⚠️ <strong>Flag for ads team review.</strong> Escalate for a deeper evaluation — review targeting, bidding strategy, negatives, conversion tracking, and account-level context before drawing conclusions.</div>`:""}
       <span class="reliability-badge ${reliabilityClass(bench.r)}">Sample: ${bench.r}</span>
     </div>`;
   }).join("");
   section.innerHTML = `<div class="results-grid">${cards}</div>`;
 }
 
+async function loadEvalSuggestions() {
+  if (!db) return;
+  const { data } = await db.from("client_profiles").select("client_name");
+  if (!data) return;
+  const dl = document.getElementById("evalClientSuggestions");
+  dl.innerHTML = [...new Set(data.map(r=>r.client_name))].sort().map(n=>`<option value="${n}">`).join("");
+}
+
+// ─── BULK UPLOAD ─────────────────────────────────────────────────────────────
+function onBulkPlatformChange() { updateBulkHints(); }
+
+function updateBulkHints() {
+  const platform = document.getElementById("bulkPlatform").value;
+  const metrics = PLATFORM_METRICS[platform];
+  document.getElementById("bulkMetricHint").textContent = `Metrics: ${metrics.join(", ")}`;
+  document.getElementById("expectedCols").innerHTML = ` <strong>Client Name</strong>, ` +
+    metrics.map(m => `<strong>${m}</strong>`).join(", ");
+}
+
+function handleFileSelect(e) { processFile(e.target.files[0]); }
+function handleFileDrop(e) { processFile(e.dataTransfer.files[0]); }
+
+function processFile(file) {
+  if (!file) return;
+  document.getElementById("uploadFileName").textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      if (!raw.length) { showToast("File appears to be empty", "error"); return; }
+      parseBulkData(raw);
+    } catch(err) {
+      showToast("Could not read file: " + err.message, "error");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function detectColumns(headers) {
+  const norm = h => h.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const map = {};
+  for (const [key, aliases] of Object.entries(COL_ALIASES)) {
+    map[key] = headers.find(h => aliases.some(a => norm(h) === norm(a))) || null;
+  }
+  return map;
+}
+
+async function parseBulkData(rawRows) {
+  const platform = document.getElementById("bulkPlatform").value;
+  const metrics  = PLATFORM_METRICS[platform];
+  const headers  = Object.keys(rawRows[0]);
+  const colMap   = detectColumns(headers);
+
+  if (!colMap.clientName) {
+    showToast("Could not find a Client Name column. Check column headers.", "error");
+    return;
+  }
+
+  // Load all profiles
+  let profiles = [];
+  if (db) {
+    const { data } = await db.from("client_profiles").select("*").eq("platform", platform);
+    profiles = data || [];
+  }
+  const profileMap = {};
+  profiles.forEach(p => { profileMap[p.client_name.toLowerCase().trim()] = p; });
+
+  // Parse each row
+  bulkParsedRows = rawRows.map(row => {
+    const clientName = String(row[colMap.clientName] || "").trim();
+    if (!clientName) return null;
+    const profile = profileMap[clientName.toLowerCase()] || null;
+    const metricValues = {};
+    metrics.forEach(m => {
+      const col = colMap[m];
+      const bench = profile ? getBench(platform, profile.shop_type, profile.service_area, m) : null;
+      const isPct = bench ? bench.pct : (m === "CTR" || m === "CR" || m === "Lead Quality Rate");
+      metricValues[m] = col ? parseMetricValue(row[col], isPct) : null;
+    });
+    return { clientName, profile, metricValues, platform };
+  }).filter(Boolean);
+
+  renderBulkPreview(bulkParsedRows, metrics);
+}
+
+function renderBulkPreview(rows, metrics) {
+  const section = document.getElementById("bulkPreviewSection");
+  const unmatched = rows.filter(r => !r.profile);
+
+  let html = "";
+
+  if (unmatched.length) {
+    html += `<div class="warn-banner">
+      ⚠️ <strong>${unmatched.length} client${unmatched.length>1?"s":""} have no profile</strong> and will be skipped:
+      ${unmatched.map(r => `<strong>${r.clientName}</strong>`).join(", ")}.
+      <a href="#" onclick="setView('profiles');return false" style="color:var(--accent);text-decoration:underline">Add their profiles</a> first, then re-upload.
+    </div>`;
+  }
+
+  const matched = rows.filter(r => r.profile);
+  if (!matched.length) {
+    section.innerHTML = html + `<div class="prompt-msg">No clients with profiles found in this file. Add client profiles first.</div>`;
+    return;
+  }
+
+  // Overall status per row = worst metric
+  function rowWorstStatus(row) {
+    const statuses = metrics.map(m => {
+      const bench = getBench(row.platform, row.profile.shop_type, row.profile.service_area, m);
+      if (!bench || bench.noData || row.metricValues[m] === null) return null;
+      return classify(row.metricValues[m], bench);
+    }).filter(Boolean);
+    if (statuses.includes("red")) return "red";
+    if (statuses.includes("yellow")) return "yellow";
+    if (statuses.length) return "green";
+    return null;
+  }
+
+  html += `<div class="card" style="padding:0">
+    <div class="card-header" style="padding:20px 20px 16px">
+      <span class="card-title">Preview — ${matched.length} client${matched.length>1?"s":""}</span>
+      <button class="btn btn-success" id="bulkSaveBtn" onclick="saveBulkData()">💾 Save All (${matched.length} clients)</button>
+    </div>
+    <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr>
+        <th>Client</th>
+        <th>Shop Type</th>
+        <th>Service Area</th>
+        ${metrics.map(m => `<th>${m}</th>`).join("")}
+        <th>Overall</th>
+      </tr></thead>
+      <tbody>`;
+
+  matched.forEach(row => {
+    const worst = rowWorstStatus(row);
+    const rowClass = worst ? `preview-row-${worst}` : "";
+    html += `<tr class="${rowClass}">
+      <td><strong>${row.clientName}</strong></td>
+      <td>${row.profile.shop_type}</td>
+      <td>${row.profile.service_area}</td>`;
+
+    metrics.forEach(m => {
+      const bench = getBench(row.platform, row.profile.shop_type, row.profile.service_area, m);
+      const val = row.metricValues[m];
+      if (!bench || bench.noData) {
+        html += `<td class="cell-nodata">N/A</td>`;
+      } else if (val === null) {
+        html += `<td class="cell-nodata">—</td>`;
+      } else {
+        const status = classify(val, bench);
+        const display = fmt(val, bench.pct);
+        const emoji = {red:"🔴",yellow:"🟡",green:"🟢"}[status];
+        html += `<td class="cell-${status}">${emoji} ${display}</td>`;
+      }
+    });
+
+    const overallPill = worst
+      ? `<span class="status-pill pill-${worst}">${{red:"🔴 At Risk",yellow:"🟡 Healthy",green:"🟢 High Performing"}[worst]}</span>`
+      : `<span style="color:var(--muted);font-size:.8rem">—</span>`;
+    html += `<td>${overallPill}</td></tr>`;
+  });
+
+  html += `</tbody></table></div>
+    <div style="padding:16px 20px;font-size:.82rem;color:var(--muted);border-top:1px solid var(--border);">
+      Reliability note: classifications are only as strong as the sample reliability for each shop type and service area. Treat weak/directional results with caution.
+    </div>
+  </div>`;
+
+  section.innerHTML = html;
+}
+
+async function saveBulkData() {
+  const month = document.getElementById("bulkMonth").value;
+  if (!month) { showToast("Select a reporting month before saving", "error"); return; }
+  const matched = bulkParsedRows.filter(r => r.profile);
+  if (!matched.length) { showToast("Nothing to save", "error"); return; }
+
+  const btn = document.getElementById("bulkSaveBtn");
+  btn.disabled = true; btn.textContent = "Saving…";
+
+  const rows = [];
+  matched.forEach(row => {
+    const metrics = PLATFORM_METRICS[row.platform];
+    metrics.forEach(m => {
+      const bench = getBench(row.platform, row.profile.shop_type, row.profile.service_area, m);
+      if (!bench || bench.noData) return;
+      const val = row.metricValues[m];
+      if (val === null) return;
+      rows.push({
+        client_name:  row.clientName,
+        report_month: month,
+        platform:     row.platform,
+        shop_type:    row.profile.shop_type,
+        service_area: row.profile.service_area,
+        metric:       m,
+        value:        val,
+        status:       classify(val, bench),
+        reliability:  bench.r,
+      });
+    });
+  });
+
+  const { error } = await db.from("metric_entries").insert(rows);
+  btn.disabled = false; btn.textContent = `💾 Save All (${matched.length} clients)`;
+  if (error) {
+    showToast("Error saving: " + error.message, "error");
+  } else {
+    showToast(`✓ Saved ${rows.length} metric entries for ${fmtMonth(month)}`, "success");
+  }
+}
+
+// ─── CLIENT PROFILES ─────────────────────────────────────────────────────────
+function renderProfileShopTypes() {
+  const platform = document.getElementById("profilePlatform").value;
+  const sel = document.getElementById("profileShopType");
+  sel.innerHTML = '<option value="">— Select —</option>';
+  getShopTypes(platform).forEach(s => {
+    const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
+  });
+  document.getElementById("profileServiceArea").innerHTML = '<option value="">— Select shop type —</option>';
+}
+
+function renderProfileServiceAreas() {
+  const platform = document.getElementById("profilePlatform").value;
+  const shopType = document.getElementById("profileShopType").value;
+  const sel = document.getElementById("profileServiceArea");
+  sel.innerHTML = '<option value="">— Select —</option>';
+  if (!shopType) return;
+  getServiceAreas(platform, shopType).forEach(a => {
+    const o = document.createElement("option"); o.value = a; o.textContent = a; sel.appendChild(o);
+  });
+}
+
+async function saveProfile() {
+  const name    = document.getElementById("profileName").value.trim();
+  const platform= document.getElementById("profilePlatform").value;
+  const shopType= document.getElementById("profileShopType").value;
+  const area    = document.getElementById("profileServiceArea").value;
+  if (!name || !shopType || !area) { showToast("Fill in all fields to add a profile", "error"); return; }
+  const { error } = await db.from("client_profiles").upsert(
+    { client_name: name, platform, shop_type: shopType, service_area: area },
+    { onConflict: "client_name,platform" }
+  );
+  if (error) { showToast("Error: " + error.message, "error"); return; }
+  showToast(`✓ Profile saved for ${name}`, "success");
+  document.getElementById("profileName").value = "";
+  loadProfiles();
+}
+
+async function loadProfiles() {
+  if (!db) { document.getElementById("profilesTable").innerHTML = `<div class="prompt-msg">Supabase not connected.</div>`; return; }
+  const { data, error } = await db.from("client_profiles").select("*").order("client_name");
+  if (error || !data?.length) {
+    document.getElementById("profilesTable").innerHTML = `<div class="prompt-msg">No profiles yet. Add your first client profile above.</div>`;
+    return;
+  }
+  let html = `<div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Client Name</th><th>Platform</th><th>Shop Type</th><th>Service Area</th><th></th></tr></thead>
+    <tbody>`;
+  data.forEach(p => {
+    html += `<tr>
+      <td><strong>${p.client_name}</strong></td>
+      <td><span class="tag">${p.platform}</span></td>
+      <td>${p.shop_type}</td>
+      <td>${p.service_area}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteProfile('${p.id}','${p.client_name}')">Delete</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById("profilesTable").innerHTML = html;
+}
+
+async function deleteProfile(id, name) {
+  if (!confirm(`Delete profile for "${name}"?`)) return;
+  const { error } = await db.from("client_profiles").delete().eq("id", id);
+  error ? showToast("Error: " + error.message, "error") : (showToast(`Deleted ${name}`, ""), loadProfiles());
+}
+
 // ─── HISTORY ─────────────────────────────────────────────────────────────────
 async function loadClientSuggestions() {
-  if (!supabaseReady) return;
-  const { data } = await db.from("metric_entries").select("client_name");
+  if (!db) return;
+  const { data } = await db.from("client_profiles").select("client_name");
   if (!data) return;
-  const names = [...new Set(data.map(r => r.client_name))].sort();
   const dl = document.getElementById("clientSuggestions");
-  dl.innerHTML = names.map(n => `<option value="${n}">`).join("");
+  dl.innerHTML = [...new Set(data.map(r=>r.client_name))].sort().map(n=>`<option value="${n}">`).join("");
 }
 
 async function loadHistory() {
-  const client = document.getElementById("historyClient").value.trim();
+  const client  = document.getElementById("historyClient").value.trim();
   const section = document.getElementById("historyResults");
-  if (!client) { showToast("Enter a client name to search", "error"); return; }
-  if (!supabaseReady) {
-    section.innerHTML = `<div class="prompt-msg">Supabase is not connected yet. See the setup instructions above.</div>`;
-    return;
-  }
+  if (!client) { showToast("Enter a client name", "error"); return; }
   section.innerHTML = `<div class="prompt-msg">Loading…</div>`;
-  const { data, error } = await db.from("metric_entries")
-    .select("*")
-    .ilike("client_name", client)
-    .order("report_month", { ascending: true });
+  const { data, error } = await db.from("metric_entries").select("*").ilike("client_name", client).order("report_month", { ascending: true });
   if (error) { section.innerHTML = `<div class="prompt-msg">Error: ${error.message}</div>`; return; }
-  if (!data || !data.length) {
-    section.innerHTML = `<div class="prompt-msg">No history found for "<strong>${client}</strong>". Save an entry on the Evaluate tab first.</div>`;
-    return;
-  }
+  if (!data?.length) { section.innerHTML = `<div class="prompt-msg">No history found for "<strong>${client}</strong>". Save entries first.</div>`; return; }
   renderHistory(data, client);
 }
 
 function renderHistory(rows, clientName) {
   const section = document.getElementById("historyResults");
-
-  // Group by platform + shop_type + service_area + metric
   const groups = {};
   rows.forEach(r => {
     const gKey = `${r.platform} · ${r.shop_type} · ${r.service_area}`;
@@ -926,67 +1030,52 @@ function renderHistory(rows, clientName) {
     if (!groups[gKey][r.metric]) groups[gKey][r.metric] = [];
     groups[gKey][r.metric].push(r);
   });
-
-  const trendIcon = (entries) => {
-    if (entries.length < 2) return '<span class="trend" title="Not enough data for trend">—</span>';
-    const prev = entries[entries.length - 2];
-    const curr = entries[entries.length - 1];
-    if (curr.status === prev.status) return '<span class="trend" title="No change">➡️</span>';
-    const rank = { green: 2, yellow: 1, red: 0 };
-    return rank[curr.status] > rank[prev.status]
-      ? '<span class="trend" title="Improving">📈</span>'
-      : '<span class="trend" title="Declining">📉</span>';
+  const trendIcon = entries => {
+    if (entries.length < 2) return '<span title="Not enough data">—</span>';
+    const rank = { green:2, yellow:1, red:0 };
+    const prev = entries[entries.length-2], curr = entries[entries.length-1];
+    if (curr.status === prev.status) return "➡️";
+    return rank[curr.status] > rank[prev.status] ? "📈" : "📉";
+  };
+  const pillHtml = s => {
+    const labels={red:"At Risk",yellow:"Healthy",green:"High Performing"}, cls={red:"pill-red",yellow:"pill-yellow",green:"pill-green"}, emoji={red:"🔴",yellow:"🟡",green:"🟢"};
+    return `<span class="status-pill ${cls[s]}">${emoji[s]} ${labels[s]}</span>`;
   };
 
-  const pillHtml = (status) => {
-    const labels = { red:"At Risk", yellow:"Healthy", green:"High Performing" };
-    const cls    = { red:"pill-red", yellow:"pill-yellow", green:"pill-green" };
-    const emoji  = { red:"🔴", yellow:"🟡", green:"🟢" };
-    return `<span class="status-pill ${cls[status]}">${emoji[status]} ${labels[status]}</span>`;
-  };
-
-  let html = `<div class="history-client-header">📋 ${clientName}</div>`;
-
+  let html = `<div style="font-size:1.1rem;font-weight:700;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);">📋 ${clientName}</div>`;
   for (const [groupKey, metrics] of Object.entries(groups)) {
-    html += `<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;">${groupKey}</div>`;
+    html += `<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">${groupKey}</div>`;
     for (const [metric, entries] of Object.entries(metrics)) {
-      html += `<div class="history-metric-block card" style="padding:20px">
-        <div class="history-metric-title">${metric} ${trendIcon(entries)}</div>
-        <table class="history-table">
-          <thead><tr>
-            <th>Month</th><th>Value</th><th>Status</th><th>Reliability</th>
-          </tr></thead>
-          <tbody>`;
+      html += `<div class="card" style="padding:20px;margin-bottom:16px">
+        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;display:flex;gap:8px;align-items:center">${metric} <span style="font-size:1rem">${trendIcon(entries)}</span></div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Value</th><th>Change</th><th>Status</th><th>Reliability</th></tr></thead><tbody>`;
       entries.forEach((e, i) => {
-        const prev = i > 0 ? entries[i - 1] : null;
-        let changeHtml = "";
+        const prev = i > 0 ? entries[i-1] : null;
+        let changeHtml = "<span style='color:var(--muted)'>—</span>";
         if (prev) {
           const delta = e.value - prev.value;
+          const isPct = e.metric === "CTR" || e.metric === "CR" || e.metric === "Lead Quality Rate";
           const sign = delta > 0 ? "+" : "";
-          const pct = e.metric.includes("Rate") || e.metric === "CTR" || e.metric === "CR";
-          changeHtml = `<span style="font-size:.75rem;color:${delta > 0 ? "var(--green)" : "var(--red)"}"> (${sign}${pct ? delta.toFixed(1)+"%" : "$"+Math.abs(delta).toFixed(2)})</span>`;
+          const col  = delta > 0 ? "var(--green)" : "var(--red)";
+          changeHtml = `<span style="color:${col};font-weight:600">${sign}${isPct ? delta.toFixed(1)+"%" : "$"+Math.abs(delta).toFixed(2)}</span>`;
         }
-        const valFmt = e.metric === "CTR" || e.metric === "CR" || e.metric === "Lead Quality Rate"
-          ? e.value.toFixed(1) + "%" : "$" + parseFloat(e.value).toFixed(2);
-        html += `<tr>
-          <td>${fmtMonth(e.report_month)}</td>
-          <td><strong>${valFmt}</strong>${changeHtml}</td>
-          <td>${pillHtml(e.status)}</td>
-          <td><span class="reliability-badge ${reliabilityClass(e.reliability)}" style="font-size:.72rem">${e.reliability}</span></td>
-        </tr>`;
+        const valFmt = (e.metric==="CTR"||e.metric==="CR"||e.metric==="Lead Quality Rate")
+          ? parseFloat(e.value).toFixed(1)+"%" : "$"+parseFloat(e.value).toFixed(2);
+        html += `<tr><td>${fmtMonth(e.report_month)}</td><td><strong>${valFmt}</strong></td><td>${changeHtml}</td><td>${pillHtml(e.status)}</td><td><span class="reliability-badge ${reliabilityClass(e.reliability)}" style="font-size:.72rem">${e.reliability}</span></td></tr>`;
       });
-      html += `</tbody></table></div>`;
+      html += `</tbody></table></div></div>`;
     }
   }
-
   section.innerHTML = html;
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.getElementById("dataNote").innerHTML = PLATFORM_NOTES["GSA"];
-// Default reporting month to current month
-document.getElementById("reportMonth").value = new Date().toISOString().slice(0, 7);
+document.getElementById("reportMonth").value = new Date().toISOString().slice(0,7);
+document.getElementById("bulkMonth").value   = new Date().toISOString().slice(0,7);
 renderShopTypes();
+renderProfileShopTypes();
+updateBulkHints();
 </script>
 </body>
 </html>
