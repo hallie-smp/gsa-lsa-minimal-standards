@@ -391,17 +391,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <span class="card-title" id="profileFormTitle">Add New Profile</span>
         <button class="btn btn-ghost btn-sm hidden" id="cancelEditBtn" onclick="cancelEditProfile()">✕ Cancel Edit</button>
       </div>
-      <div class="grid-4" style="margin-bottom:16px">
+      <div class="grid-3" style="margin-bottom:16px">
         <div class="field">
           <label>Client Name</label>
           <input type="text" id="profileName" placeholder="e.g. First Choice Automotive" />
-        </div>
-        <div class="field">
-          <label>Platform</label>
-          <select id="profilePlatform" onchange="renderProfileShopTypes()">
-            <option value="GSA">GSA</option>
-            <option value="LSA">LSA</option>
-          </select>
         </div>
         <div class="field">
           <label>Shop Type</label>
@@ -942,7 +935,7 @@ async function parseBulkData(rawRows) {
   // Load all profiles
   let profiles = [];
   if (db) {
-    const { data } = await db.from("client_profiles").select("*").eq("platform", platform);
+    const { data } = await db.from("client_profiles").select("*");
     profiles = data || [];
   }
   const profileMap = {};
@@ -1128,7 +1121,6 @@ let editingProfileId = null;
 function startEditProfile(profile) {
   editingProfileId = profile.id;
   document.getElementById("profileName").value = profile.client_name;
-  document.getElementById("profilePlatform").value = profile.platform;
   renderProfileShopTypes();
   document.getElementById("profileShopType").value = profile.shop_type;
   renderProfileServiceAreas();
@@ -1149,29 +1141,26 @@ function cancelEditProfile() {
 }
 
 function renderProfileShopTypes() {
-  const platform = document.getElementById("profilePlatform").value;
   const sel = document.getElementById("profileShopType");
   sel.innerHTML = '<option value="">— Select —</option>';
-  getShopTypes(platform).forEach(s => {
+  getShopTypes("GSA").forEach(s => {
     const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
   });
   document.getElementById("profileServiceArea").innerHTML = '<option value="">— Select shop type —</option>';
 }
 
 function renderProfileServiceAreas() {
-  const platform = document.getElementById("profilePlatform").value;
   const shopType = document.getElementById("profileShopType").value;
   const sel = document.getElementById("profileServiceArea");
   sel.innerHTML = '<option value="">— Select —</option>';
   if (!shopType) return;
-  getServiceAreas(platform, shopType).forEach(a => {
+  getServiceAreas("GSA", shopType).forEach(a => {
     const o = document.createElement("option"); o.value = a; o.textContent = a; sel.appendChild(o);
   });
 }
 
 async function saveProfile() {
   const name    = document.getElementById("profileName").value.trim();
-  const platform= document.getElementById("profilePlatform").value;
   const shopType= document.getElementById("profileShopType").value;
   const area    = document.getElementById("profileServiceArea").value;
   if (!name || !shopType || !area) { showToast("Fill in all fields", "error"); return; }
@@ -1179,12 +1168,12 @@ async function saveProfile() {
   let error;
   if (editingProfileId) {
     ({ error } = await db.from("client_profiles").update(
-      { client_name: name, platform, shop_type: shopType, service_area: area }
+      { client_name: name, shop_type: shopType, service_area: area }
     ).eq("id", editingProfileId));
   } else {
     ({ error } = await db.from("client_profiles").upsert(
-      { client_name: name, platform, shop_type: shopType, service_area: area },
-      { onConflict: "client_name,platform" }
+      { client_name: name, shop_type: shopType, service_area: area },
+      { onConflict: "client_name" }
     ));
   }
   if (error) { showToast("Error: " + error.message, "error"); return; }
@@ -1201,13 +1190,12 @@ async function loadProfiles() {
     return;
   }
   let html = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Client Name</th><th>Platform</th><th>Shop Type</th><th>Service Area</th><th></th></tr></thead>
+    <thead><tr><th>Client Name</th><th>Shop Type</th><th>Service Area</th><th></th></tr></thead>
     <tbody>`;
   data.forEach(p => {
     const safeProfile = encodeURIComponent(JSON.stringify(p));
     html += `<tr>
       <td><strong>${p.client_name}</strong></td>
-      <td><span class="tag">${p.platform}</span></td>
       <td>${p.shop_type}</td>
       <td>${p.service_area}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1596,9 +1584,6 @@ renderProfileShopTypes();
 updateBulkHints();
 loadDashboard();
 
-// Belt-and-suspenders event listeners for profile selects (inline onchange can
-// silently fail if a prior JS error runs before the handler is registered)
-document.getElementById("profilePlatform").addEventListener("change", renderProfileShopTypes);
 document.getElementById("profileShopType").addEventListener("change", renderProfileServiceAreas);
 </script>
 </body>
