@@ -193,6 +193,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .dist-yellow { background: var(--yellow-border); color: var(--yellow); }
 .dist-green  { background: var(--green-border);  color: var(--green); }
 .dash-no-data { color: var(--muted); font-size: .8rem; font-style: italic; }
+/* Segment expand/collapse */
+.dash-expand-btn { background: none; border: none; cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--accent); padding: 4px 8px; border-radius: 6px; transition: background .15s; }
+.dash-expand-btn:hover { background: var(--accent-light); }
+.dash-client-table { border-top: 1px solid var(--border); }
+/* Data management accordion */
+.mgmt-accordion { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 24px; overflow: hidden; }
+.mgmt-accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; user-select: none; }
+.mgmt-accordion-header:hover { background: #f8fafc; }
+.mgmt-accordion-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--red); }
+.mgmt-accordion-body { display: none; padding: 16px 20px; border-top: 1px solid var(--border); }
+.mgmt-accordion-body.open { display: block; }
 
 /* History report */
 .report-header { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 24px 28px; margin-bottom: 20px; box-shadow: var(--shadow); }
@@ -283,6 +294,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="info-card"><strong>🔴 At Risk</strong>Performing below acceptable threshold. Requires optimization review.</div>
         <div class="info-card"><strong>🟡 Healthy / Expected</strong>Performing within expected benchmark range.</div>
         <div class="info-card"><strong>🟢 High Performing</strong>Exceeding benchmark expectations. Opportunity for scaling.</div>
+      </div>
+    </div>
+
+    <!-- Bulk data management accordion -->
+    <div class="mgmt-accordion" id="bulkMgmtAccordion">
+      <div class="mgmt-accordion-header" onclick="toggleMgmtAccordion()">
+        <span class="mgmt-accordion-title">🗑 Bulk Data Management</span>
+        <span id="mgmtAccordionChevron" style="color:var(--muted);font-size:.85rem">▼ Expand</span>
+      </div>
+      <div class="mgmt-accordion-body" id="mgmtAccordionBody">
+        <p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">
+          Delete an entire month's data across <strong>all clients</strong> — use this when a monthly upload was incorrect and needs to be re-done from scratch.
+        </p>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="field" style="flex:0 0 auto">
+            <label>Platform</label>
+            <select id="mgmtPlatform" style="min-width:160px">
+              <option value="GSA">GSA</option>
+              <option value="LSA">LSA</option>
+            </select>
+          </div>
+          <div class="field" style="flex:0 0 auto">
+            <label>Month to delete</label>
+            <select id="mgmtMonth" style="min-width:180px">
+              <option value="">— Select month —</option>
+            </select>
+          </div>
+          <button class="btn btn-danger" onclick="bulkDeleteMonth()" style="margin-bottom:2px">🗑 Delete All Data for This Month</button>
+        </div>
+        <div id="mgmtStatus" style="margin-top:10px;font-size:.82rem;color:var(--muted)"></div>
       </div>
     </div>
   </div>
@@ -627,26 +668,30 @@ async function loadDashboard() {
   renderDashboard(data, platform);
 }
 
-function renderDashboard(rows, platform) {
-  const section = document.getElementById("dashboardResults");
-  const metrics = PLATFORM_METRICS[platform];
-
-  // Group rows by shop_type → service_area → metric → [values]
-  // Per client, average their values across the selected date range first, then aggregate across clients
-  const clientMap = {}; // client_name → { shop_type, service_area, metric → [values] }
+function buildClientMap(rows, platform, metrics) {
+  const clientMap = {};
   rows.forEach(r => {
     if (!clientMap[r.client_name]) clientMap[r.client_name] = { shop_type: r.shop_type, service_area: r.service_area, metrics: {} };
     if (!clientMap[r.client_name].metrics[r.metric]) clientMap[r.client_name].metrics[r.metric] = [];
     clientMap[r.client_name].metrics[r.metric].push(parseFloat(r.value));
   });
+  return clientMap;
+}
 
-  // Build segment map: shop_type → service_area → metric → [client averages]
+function renderDashboard(rows, platform) {
+  const section = document.getElementById("dashboardResults");
+  const metrics = PLATFORM_METRICS[platform];
+  const fmtV = (v, bench) => bench.pct ? v.toFixed(1)+"%" : "$"+v.toFixed(0);
+
+  const clientMap = buildClientMap(rows, platform, metrics);
+
+  // Build segment map: shop_type||service_area → { meta, metrics: { m → [{name,avg}] } }
   const segments = {};
-  const clientNames = {}; // track client counts per segment
+  const segClientSets = {};
   Object.entries(clientMap).forEach(([name, c]) => {
     const key = `${c.shop_type}||${c.service_area}`;
-    if (!segments[key]) { segments[key] = { shop_type: c.shop_type, service_area: c.service_area, metrics: {} }; clientNames[key] = new Set(); }
-    clientNames[key].add(name);
+    if (!segments[key]) { segments[key] = { shop_type: c.shop_type, service_area: c.service_area, metrics: {} }; segClientSets[key] = new Set(); }
+    segClientSets[key].add(name);
     metrics.forEach(m => {
       if (!c.metrics[m]) return;
       const avg = c.metrics[m].reduce((a,b)=>a+b,0) / c.metrics[m].length;
@@ -655,38 +700,28 @@ function renderDashboard(rows, platform) {
     });
   });
 
-  // Sort segments by shop type then service area
   const sorted = Object.values(segments).sort((a,b) => a.shop_type.localeCompare(b.shop_type) || a.service_area.localeCompare(b.service_area));
-
-  // Group by shop type for section headers
   const byShopType = {};
-  sorted.forEach(seg => {
-    if (!byShopType[seg.shop_type]) byShopType[seg.shop_type] = [];
-    byShopType[seg.shop_type].push(seg);
-  });
-
-  const fmtV = (v, bench) => bench.pct ? v.toFixed(1)+"%" : "$"+v.toFixed(0);
+  sorted.forEach(seg => { if (!byShopType[seg.shop_type]) byShopType[seg.shop_type] = []; byShopType[seg.shop_type].push(seg); });
 
   let html = "";
   for (const [shopType, segs] of Object.entries(byShopType)) {
     html += `<div class="dash-section-title"><span class="tag">${shopType}</span></div>`;
     segs.forEach(seg => {
       const segKey = `${seg.shop_type}||${seg.service_area}`;
-      const clientCount = clientNames[segKey]?.size || 0;
+      const clientCount = segClientSets[segKey]?.size || 0;
+      const safeKey = segKey.replace(/[^a-zA-Z0-9]/g,"_");
+
+      // Summary metric cells
       const metricCells = metrics.map(m => {
         const bench = getBench(platform, seg.shop_type, seg.service_area, m);
         const clientAvgs = seg.metrics[m] || [];
         if (!bench || bench.noData || !clientAvgs.length) {
-          return `<div class="dash-metric-cell">
-            <div class="dash-metric-label">${m}</div>
-            <div class="dash-no-data">No data</div>
-          </div>`;
+          return `<div class="dash-metric-cell"><div class="dash-metric-label">${m}</div><div class="dash-no-data">No data</div></div>`;
         }
-        // Portfolio average across client averages
         const portfolioAvg = clientAvgs.reduce((a,b) => a + b.avg, 0) / clientAvgs.length;
         const avgStatus = classify(portfolioAvg, bench);
-        // Distribution count
-        const dist = { red: 0, yellow: 0, green: 0 };
+        const dist = { red:0, yellow:0, green:0 };
         clientAvgs.forEach(c => { dist[classify(c.avg, bench)]++; });
         const distHtml = Object.entries(dist).filter(([,n])=>n>0)
           .map(([s,n]) => `<span class="dist-pill dist-${s}">${{red:"🔴",yellow:"🟡",green:"🟢"}[s]} ${n}</span>`).join("");
@@ -697,19 +732,86 @@ function renderDashboard(rows, platform) {
         </div>`;
       }).join("");
 
+      // Client detail table (hidden by default)
+      const clientRows = [...(segClientSets[segKey] || [])].sort().map(name => {
+        const c = clientMap[name];
+        const cells = metrics.map(m => {
+          const bench = getBench(platform, seg.shop_type, seg.service_area, m);
+          const vals = c.metrics[m];
+          if (!bench || bench.noData || !vals) return `<td class="cell-nodata">—</td>`;
+          const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+          const status = classify(avg, bench);
+          return `<td class="cell-${status}">${{red:"🔴",yellow:"🟡",green:"🟢"}[status]} ${fmtV(avg,bench)}</td>`;
+        }).join("");
+        return `<tr><td><button class="btn btn-ghost btn-sm" style="font-size:.78rem;padding:3px 8px" onclick="setView('history');setTimeout(()=>{document.getElementById('historyClient').value='${name}';loadHistory();},100)">${name} ↗</button></td>${cells}</tr>`;
+      }).join("");
+
       html += `<div class="dash-segment-card">
         <div class="dash-segment-header">
           <div>
             <div class="dash-segment-label">${seg.service_area}</div>
             <div class="dash-segment-sub">${clientCount} client${clientCount !== 1 ? "s" : ""}</div>
           </div>
+          <button class="dash-expand-btn" id="expand-${safeKey}" onclick="toggleSegment('${safeKey}')">▼ View Clients</button>
         </div>
         <div class="dash-metric-grid">${metricCells}</div>
+        <div class="dash-client-table hidden" id="clients-${safeKey}">
+          <div class="table-wrap" style="padding:0 0 4px">
+            <table class="data-table">
+              <thead><tr><th>Client</th>${metrics.map(m=>`<th>${m}</th>`).join("")}</tr></thead>
+              <tbody>${clientRows}</tbody>
+            </table>
+          </div>
+        </div>
       </div>`;
     });
   }
 
   section.innerHTML = html;
+  // Populate bulk delete month dropdown from fetched data
+  populateMgmtMonths(rows);
+}
+
+function toggleSegment(safeKey) {
+  const table = document.getElementById(`clients-${safeKey}`);
+  const btn   = document.getElementById(`expand-${safeKey}`);
+  const open  = !table.classList.contains("hidden");
+  table.classList.toggle("hidden", open);
+  btn.textContent = open ? "▼ View Clients" : "▲ Hide Clients";
+}
+
+function populateMgmtMonths(rows) {
+  const months = [...new Set(rows.map(r => r.report_month))].sort().reverse();
+  const sel = document.getElementById("mgmtMonth");
+  sel.innerHTML = `<option value="">— Select month —</option>` +
+    months.map(m => `<option value="${m}">${fmtMonth(m)}</option>`).join("");
+}
+
+function toggleMgmtAccordion() {
+  const body    = document.getElementById("mgmtAccordionBody");
+  const chevron = document.getElementById("mgmtAccordionChevron");
+  const open    = body.classList.toggle("open");
+  chevron.textContent = open ? "▲ Collapse" : "▼ Expand";
+}
+
+async function bulkDeleteMonth() {
+  const platform = document.getElementById("mgmtPlatform").value;
+  const month    = document.getElementById("mgmtMonth").value;
+  if (!month) { showToast("Select a month to delete", "error"); return; }
+
+  // Count affected rows first
+  const { count } = await db.from("metric_entries").select("*", { count:"exact", head:true })
+    .eq("platform", platform).eq("report_month", month);
+
+  if (!confirm(`Delete ALL ${platform} data for ${fmtMonth(month)} across every client?\n\nThis will remove ${count ?? "?"} entries and cannot be undone.`)) return;
+
+  const status = document.getElementById("mgmtStatus");
+  status.textContent = "Deleting…";
+  const { error } = await db.from("metric_entries").delete().eq("platform", platform).eq("report_month", month);
+  if (error) { status.textContent = "Error: " + error.message; showToast("Error: " + error.message, "error"); return; }
+  status.textContent = `✓ Deleted all ${platform} data for ${fmtMonth(month)}.`;
+  showToast(`✓ Cleared ${fmtMonth(month)} for all ${platform} clients`, "success");
+  loadDashboard();
 }
 
 function exportDashboard() {
@@ -1373,16 +1475,24 @@ function renderHistory(rows, clientName) {
       </div>`;
     }
 
-    // ── Month Management card ─────────────────────────────────────────────────
-    html += `<div class="card" style="margin-bottom:20px;border-color:#fed7d7">
-      <div class="card-header">
-        <span class="card-title" style="color:var(--red)">🗑 Manage Monthly Data</span>
+    // ── Month Management accordion ────────────────────────────────────────────
+    html += `<div class="mgmt-accordion" style="margin-bottom:20px">
+      <div class="mgmt-accordion-header" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.chev').textContent=this.nextElementSibling.classList.contains('open')?'▲ Collapse':'▼ Expand'">
+        <span class="mgmt-accordion-title">🗑 Manage Monthly Data</span>
+        <span class="chev" style="color:var(--muted);font-size:.82rem">▼ Expand</span>
       </div>
-      <p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Delete an entire month's data for this client and re-upload with corrected numbers.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        ${allMonths.map(m => `<button class="btn btn-danger btn-sm" onclick="deleteClientMonth('${clientName}', '${m}', '${platform}')">
-          🗑 ${fmtMonth(m)}
-        </button>`).join("")}
+      <div class="mgmt-accordion-body">
+        <p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Delete an entire month's data for <strong>${clientName}</strong> and re-upload corrected numbers.</p>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="field" style="flex:0 0 auto">
+            <label>Select month</label>
+            <select id="clientMgmtMonth-${platform}" style="min-width:180px">
+              <option value="">— Select month —</option>
+              ${allMonths.slice().reverse().map(m=>`<option value="${m}">${fmtMonth(m)}</option>`).join("")}
+            </select>
+          </div>
+          <button class="btn btn-danger" onclick="deleteClientMonthFromSelect('${clientName}','${platform}')" style="margin-bottom:2px">🗑 Delete This Month</button>
+        </div>
       </div>
     </div>`;
   }
@@ -1432,7 +1542,10 @@ async function deleteEntry(id, clientName, month, metric) {
 }
 
 // ── Delete ALL entries for a client for a given month ────────────────────────
-async function deleteClientMonth(clientName, month, platform) {
+async function deleteClientMonthFromSelect(clientName, platform) {
+  const sel   = document.getElementById(`clientMgmtMonth-${platform}`);
+  const month = sel?.value;
+  if (!month) { showToast("Select a month to delete", "error"); return; }
   if (!confirm(`Delete ALL ${platform} data for "${clientName}" — ${fmtMonth(month)}?\n\nThis cannot be undone.`)) return;
   const { error } = await db.from("metric_entries")
     .delete()
