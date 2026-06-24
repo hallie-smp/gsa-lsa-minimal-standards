@@ -368,8 +368,11 @@
 
     <!-- Account Details -->
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px">Account Details</div>
-      <div class="selector-row-3" style="margin-bottom:16px">
+      <div class="card-header">
+        <span class="card-title">Account Details</span>
+        <button class="btn btn-ghost" onclick="clearAll()" style="font-size:.82rem;padding:6px 14px;">✕ Clear All</button>
+      </div>
+      <div class="selector-row" style="margin-bottom:16px">
         <div class="field">
           <label for="clientName">Client Name</label>
           <input type="text" id="clientName" placeholder="e.g. First Choice Automotive" oninput="updateSaveBar()" />
@@ -377,12 +380,6 @@
         <div class="field">
           <label for="reportMonth">Reporting Month</label>
           <input type="month" id="reportMonth" oninput="updateSaveBar()" />
-        </div>
-        <div class="field">
-          <label for="serviceArea">Service Area</label>
-          <select id="serviceArea" onchange="onServiceAreaChange()">
-            <option value="">— Select —</option>
-          </select>
         </div>
       </div>
       <div class="selector-row">
@@ -392,8 +389,11 @@
             <option value="">— Select shop type —</option>
           </select>
         </div>
-        <div class="field" id="serviceAreaField">
-          <!-- Rendered above, kept for layout — hidden duplicate below is unused -->
+        <div class="field">
+          <label for="serviceArea">Service Area</label>
+          <select id="serviceArea" onchange="onServiceAreaChange()">
+            <option value="">— Select shop type first —</option>
+          </select>
         </div>
       </div>
     </div>
@@ -402,7 +402,6 @@
     <div id="metricsCard" class="card hidden">
       <div class="card-header">
         <span class="card-title">Enter Metric Values</span>
-        <button class="btn btn-ghost" onclick="clearAll()" style="font-size:.82rem;padding:6px 14px;">✕ Clear All</button>
       </div>
       <div class="metrics-grid" id="metricsInputs"></div>
     </div>
