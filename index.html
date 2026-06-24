@@ -1333,8 +1333,11 @@ function renderHistory(rows, clientName) {
   for (const [gKey, metricMap] of Object.entries(groups)) {
     const [platform, shopType, area] = gKey.split("||");
 
+    // Collect all unique months across all metrics for this group
+    const allMonths = [...new Set(Object.values(metricMap).flat().map(e => e.report_month))].sort();
+    const latestMonth = allMonths[allMonths.length - 1];
+
     // Report header
-    const latestMonth = Object.values(metricMap).flat().map(e=>e.report_month).sort().pop();
     html += `<div class="report-header">
       <h2>📋 ${clientName}</h2>
       <p>${platform} &nbsp;·&nbsp; ${shopType} &nbsp;·&nbsp; ${area} &nbsp;·&nbsp; Through ${fmtMonth(latestMonth)}</p>
@@ -1362,7 +1365,6 @@ function renderHistory(rows, clientName) {
         const delta = curVal - parseFloat(prev.value);
         const sign  = delta >= 0 ? "+" : "";
         const deltaStr = isPct ? delta.toFixed(1)+"%" : "$"+Math.abs(delta).toFixed(2);
-        // For lower_better: going down is good; for higher_better: going up is good
         const isGood = bench.d === "lower_better" ? delta <= 0 : delta >= 0;
         const col    = isGood ? "var(--green)" : "var(--red)";
         const arrow  = delta > 0 ? "▲" : delta < 0 ? "▼" : "─";
@@ -1383,9 +1385,9 @@ function renderHistory(rows, clientName) {
             ${drawMetricChart(entries, bench)}
           </div>
         </div>
-        ${entries.length > 1 ? `<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
           <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Monthly Breakdown</div>
-          <div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Value</th><th>Change</th><th>Status</th></tr></thead><tbody>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Value</th><th>Change</th><th>Status</th><th style="width:110px"></th></tr></thead><tbody>
           ${entries.map((e,i) => {
             const p = i > 0 ? entries[i-1] : null;
             const v = parseFloat(e.value);
@@ -1398,14 +1400,91 @@ function renderHistory(rows, clientName) {
               const arr  = d > 0 ? "▲" : d < 0 ? "▼" : "─";
               chg = `<span style="color:${col};font-weight:600">${arr} ${(d>=0?"+":"")}${isPct ? d.toFixed(1)+"%" : "$"+Math.abs(d).toFixed(2)}</span>`;
             }
-            return `<tr><td>${fmtMonth(e.report_month)}</td><td><strong>${fmtV(v)}</strong></td><td>${chg}</td><td><span class="status-pill pill-${s}">${{red:"🔴",yellow:"🟡",green:"🟢"}[s]} ${{red:"At Risk",yellow:"Healthy",green:"High Performing"}[s]}</span></td></tr>`;
+            return `<tr id="entry-row-${e.id}">
+              <td>${fmtMonth(e.report_month)}</td>
+              <td id="entry-val-${e.id}"><strong>${fmtV(v)}</strong></td>
+              <td>${chg}</td>
+              <td><span class="status-pill pill-${s}">${{red:"🔴",yellow:"🟡",green:"🟢"}[s]} ${{red:"At Risk",yellow:"Healthy",green:"High Performing"}[s]}</span></td>
+              <td style="white-space:nowrap">
+                <button class="btn btn-ghost btn-sm" style="margin-right:4px" onclick="startEditEntry('${e.id}', ${v}, ${isPct})">✏️ Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteEntry('${e.id}', '${clientName}', '${e.report_month}', '${metric}')">✕</button>
+              </td>
+            </tr>`;
           }).join("")}
           </tbody></table></div>
-        </div>` : ""}
+        </div>
       </div>`;
     }
+
+    // ── Month Management card ─────────────────────────────────────────────────
+    html += `<div class="card" style="margin-bottom:20px;border-color:#fed7d7">
+      <div class="card-header">
+        <span class="card-title" style="color:var(--red)">🗑 Manage Monthly Data</span>
+      </div>
+      <p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Delete an entire month's data for this client and re-upload with corrected numbers.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${allMonths.map(m => `<button class="btn btn-danger btn-sm" onclick="deleteClientMonth('${clientName}', '${m}', '${platform}')">
+          🗑 ${fmtMonth(m)}
+        </button>`).join("")}
+      </div>
+    </div>`;
   }
   section.innerHTML = html;
+}
+
+// ── Edit a single metric entry ───────────────────────────────────────────────
+function startEditEntry(id, currentValue, isPct) {
+  const cell = document.getElementById(`entry-val-${id}`);
+  const unit = isPct ? "%" : "$";
+  cell.innerHTML = `<div style="display:flex;align-items:center;gap:6px">
+    <input type="number" id="edit-input-${id}" value="${currentValue}" step="any" min="0"
+      style="width:90px;padding:5px 8px;border:1.5px solid var(--accent);border-radius:6px;font-size:.88rem"
+      onkeydown="if(event.key==='Enter')saveEditEntry('${id}',${isPct})" />
+    <span style="color:var(--muted);font-size:.85rem">${unit}</span>
+    <button class="btn btn-primary btn-sm" onclick="saveEditEntry('${id}',${isPct})">Save</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadHistory()">✕</button>
+  </div>`;
+  document.getElementById(`edit-input-${id}`).focus();
+}
+
+async function saveEditEntry(id, isPct) {
+  const input = document.getElementById(`edit-input-${id}`);
+  const newVal = parseFloat(input.value);
+  if (isNaN(newVal) || newVal < 0) { showToast("Enter a valid number", "error"); return; }
+
+  // Fetch the existing row to re-classify
+  const { data: existing, error: fetchErr } = await db.from("metric_entries").select("*").eq("id", id).single();
+  if (fetchErr || !existing) { showToast("Could not find entry", "error"); return; }
+
+  const bench = getBench(existing.platform, existing.shop_type, existing.service_area, existing.metric);
+  const newStatus = bench && !bench.noData ? classify(newVal, bench) : existing.status;
+
+  const { error } = await db.from("metric_entries").update({ value: newVal, status: newStatus }).eq("id", id);
+  if (error) { showToast("Error: " + error.message, "error"); return; }
+  showToast("✓ Value updated", "success");
+  loadHistory();
+}
+
+// ── Delete a single metric entry ─────────────────────────────────────────────
+async function deleteEntry(id, clientName, month, metric) {
+  if (!confirm(`Delete ${metric} entry for ${clientName} — ${fmtMonth(month)}?`)) return;
+  const { error } = await db.from("metric_entries").delete().eq("id", id);
+  if (error) { showToast("Error: " + error.message, "error"); return; }
+  showToast(`Deleted ${metric} — ${fmtMonth(month)}`, "");
+  loadHistory();
+}
+
+// ── Delete ALL entries for a client for a given month ────────────────────────
+async function deleteClientMonth(clientName, month, platform) {
+  if (!confirm(`Delete ALL ${platform} data for "${clientName}" — ${fmtMonth(month)}?\n\nThis cannot be undone.`)) return;
+  const { error } = await db.from("metric_entries")
+    .delete()
+    .eq("client_name", clientName)
+    .eq("report_month", month)
+    .eq("platform", platform);
+  if (error) { showToast("Error: " + error.message, "error"); return; }
+  showToast(`✓ Deleted all ${fmtMonth(month)} data for ${clientName}`, "success");
+  loadHistory();
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
